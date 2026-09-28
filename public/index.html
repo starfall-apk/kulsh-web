@@ -181,6 +181,34 @@
         </div>
         <button class="switch" id="sendOnEnterSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
       </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.autoScroll"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.autoScrollSub"></span>
+        </div>
+        <button class="switch" id="autoScrollSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.showHint"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.showHintSub"></span>
+        </div>
+        <button class="switch" id="showHintSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row settings-row-col">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.temperature"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.temperatureSub"></span>
+        </div>
+        <div class="slider-line"><input type="range" id="tempRange" min="0" max="1.5" step="0.05" value="0.9" class="slider slider-wide" /><span id="tempVal" class="slider-val">0.9</span></div>
+      </div>
+      <div class="settings-row settings-row-col">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.customPrompt"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.customPromptSub"></span>
+        </div>
+        <textarea id="customPrompt" class="text-area" rows="3" maxlength="1500"></textarea>
+      </div>
     </section>
 
     <section class="settings-panel" data-panel="appearance">
@@ -228,6 +256,55 @@
           <button class="segmented-btn" data-size="md">A</button>
           <button class="segmented-btn" data-size="lg">A</button>
         </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.chatWidth"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.chatWidthSub"></span>
+        </div>
+        <div class="segmented" id="chatWidthSeg"><button class="segmented-btn" data-v="narrow" data-i18n="settings.opt.narrow"></button><button class="segmented-btn" data-v="normal" data-i18n="settings.opt.normal"></button><button class="segmented-btn" data-v="wide" data-i18n="settings.opt.wide"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.density"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.densitySub"></span>
+        </div>
+        <div class="segmented" id="densitySeg"><button class="segmented-btn" data-v="compact" data-i18n="settings.opt.compact"></button><button class="segmented-btn" data-v="normal" data-i18n="settings.opt.normal"></button><button class="segmented-btn" data-v="relaxed" data-i18n="settings.opt.relaxed"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.fontFamily"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.fontFamilySub"></span>
+        </div>
+        <div class="segmented" id="fontFamilySeg"><button class="segmented-btn" data-v="roboto" data-i18n="settings.opt.roboto"></button><button class="segmented-btn" data-v="flex" data-i18n="settings.opt.flex"></button><button class="segmented-btn" data-v="system" data-i18n="settings.opt.system"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.showAvatars"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.showAvatarsSub"></span>
+        </div>
+        <button class="switch" id="showAvatarsSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.showNames"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.showNamesSub"></span>
+        </div>
+        <button class="switch" id="showNamesSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.reduceMotion"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.reduceMotionSub"></span>
+        </div>
+        <button class="switch" id="reduceMotionSwitch" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.lottie"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.lottieSub"></span>
+        </div>
+        <button class="switch" id="lottieSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
       </div>
     </section>
 

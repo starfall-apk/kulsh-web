@@ -46,6 +46,17 @@
       voiceAutoplay: false,
       voiceRate: 1,
       voiceURI: '',
+      autoScroll: true,
+      showHint: true,
+      temperature: 0.9,
+      customPrompt: '',
+      chatWidth: 'normal',
+      density: 'normal',
+      fontFamily: 'roboto',
+      showAvatars: true,
+      showNames: true,
+      reduceMotion: false,
+      lottie: true,
     };
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
@@ -158,7 +169,23 @@
     root.setAttribute('data-accent', AppState.settings.accent);
     root.setAttribute('data-fontsize', AppState.settings.fontSize);
     root.setAttribute('data-animated-bg', AppState.settings.animatedBg ? 'on' : 'off');
+    const S = AppState.settings;
+    root.setAttribute('data-width', S.chatWidth);
+    root.setAttribute('data-density', S.density);
+    root.setAttribute('data-font', S.fontFamily);
+    root.setAttribute('data-avatars', S.showAvatars ? 'on' : 'off');
+    root.setAttribute('data-names', S.showNames ? 'on' : 'off');
+    root.setAttribute('data-hint', S.showHint ? 'on' : 'off');
+    root.setAttribute('data-motion', S.reduceMotion ? 'reduce' : 'full');
+    root.setAttribute('data-lottie', S.lottie ? 'on' : 'off');
     window.applyI18n(AppState.settings.lang);
+    const setSeg = (id, key) => $$('#' + id + ' .segmented-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.v === S[key]));
+    setSeg('chatWidthSeg', 'chatWidth'); setSeg('densitySeg', 'density'); setSeg('fontFamilySeg', 'fontFamily');
+    const setSw = (id, val) => { const n = document.getElementById(id); if (n) n.setAttribute('aria-checked', String(!!val)); };
+    setSw('autoScrollSwitch', S.autoScroll); setSw('showHintSwitch', S.showHint); setSw('showAvatarsSwitch', S.showAvatars);
+    setSw('showNamesSwitch', S.showNames); setSw('reduceMotionSwitch', S.reduceMotion); setSw('lottieSwitch', S.lottie);
+    const tr = document.getElementById('tempRange'); if (tr) { tr.value = S.temperature; document.getElementById('tempVal').textContent = Number(S.temperature).toFixed(2).replace(/0$/, ''); }
+    const cp = document.getElementById('customPrompt'); if (cp && document.activeElement !== cp) cp.value = S.customPrompt || '';
 
     // settings dialog controls
     $$('#langSegmented .segmented-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.lang === AppState.settings.lang));
@@ -343,7 +370,8 @@
   function renderMarkdown(text) {
     if (!window.marked) return escapeHtml(text);
     window.marked.setOptions({ breaks: true, gfm: true });
-    const html = window.marked.parse(text || '');
+    let html = window.marked.parse(text || '');
+    html = html.replace(/<table>/g, '<div class="table-wrap"><div class="table-scroll"><table>').replace(/<\/table>/g, '</table></div></div>');
     return html;
   }
 
@@ -394,8 +422,14 @@
 
     if (!chat || chat.messages.length === 0) {
       el.messages.innerHTML = '';
+      const wasHidden = el.emptyState.style.display !== 'flex';
       el.emptyState.style.display = 'flex';
-      showRandomLottie();
+      if (wasHidden || !lottieInstance) {
+        el.emptyState.classList.remove('is-entering');
+        void el.emptyState.offsetWidth;
+        el.emptyState.classList.add('is-entering');
+        showRandomLottie();
+      }
       renderModelPicker();
       return;
     }
@@ -411,7 +445,7 @@
         const wasNearBottom = isNearBottom();
         patchMessageNode(lastNode, lastMsg);
         enhanceCodeBlocks(lastNode);
-        if (wasNearBottom) scrollToBottom();
+        if (wasNearBottom && AppState.settings.autoScroll) scrollToBottom();
         renderModelPicker();
         return;
       }
@@ -440,7 +474,9 @@
     // once streaming finishes, actions (copy/speak/regenerate) need to appear — simplest is a full row rebuild
     if (!m.pending && !m.streaming && !node.querySelector('.msg-actions')) {
       const fresh = buildMessageNode(m);
+      fresh.style.animation = 'none'; // no second entrance flash when streaming completes
       node.replaceWith(fresh);
+      enhanceCodeBlocks(fresh);
     }
   }
 
@@ -656,13 +692,13 @@
 
     try {
       const payloadMessages = chat.messages
-        .filter((m) => m.id !== pendingMsg.id)
+        .filter((m) => m.id !== pendingMsg.id && !m.error && (m.text || (m.attachments && m.attachments.length)))
         .map((m) => ({ role: m.role, content: m.text, attachments: m.attachments || [] }));
 
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payloadMessages, model: chat.model }),
+        body: JSON.stringify({ messages: payloadMessages, model: chat.model, temperature: AppState.settings.temperature, customPrompt: AppState.settings.customPrompt || '' }),
       });
 
       if (!res.ok || !res.body) {
@@ -938,6 +974,17 @@
       saveSettings(AppState.settings);
       applySettingsToDOM();
     });
+
+    // --- extra settings ---
+    const bindSeg = (id, key) => { const n = document.getElementById(id); if (!n) return; n.addEventListener('click', (e) => { const b = e.target.closest('.segmented-btn'); if (!b) return; AppState.settings[key] = b.dataset.v; saveSettings(AppState.settings); applySettingsToDOM(); }); };
+    bindSeg('chatWidthSeg', 'chatWidth'); bindSeg('densitySeg', 'density'); bindSeg('fontFamilySeg', 'fontFamily');
+    const bindSw = (id, key) => { const n = document.getElementById(id); if (!n) return; n.addEventListener('click', () => { AppState.settings[key] = !AppState.settings[key]; saveSettings(AppState.settings); applySettingsToDOM(); }); };
+    bindSw('autoScrollSwitch', 'autoScroll'); bindSw('showHintSwitch', 'showHint'); bindSw('showAvatarsSwitch', 'showAvatars');
+    bindSw('showNamesSwitch', 'showNames'); bindSw('reduceMotionSwitch', 'reduceMotion'); bindSw('lottieSwitch', 'lottie');
+    const tr = document.getElementById('tempRange');
+    if (tr) tr.addEventListener('input', () => { AppState.settings.temperature = parseFloat(tr.value); document.getElementById('tempVal').textContent = Number(tr.value).toFixed(2).replace(/0$/, ''); saveSettings(AppState.settings); });
+    const cp = document.getElementById('customPrompt');
+    if (cp) cp.addEventListener('input', () => { AppState.settings.customPrompt = cp.value.slice(0, 1500); saveSettings(AppState.settings); });
 
     el.defaultModelSelect.addEventListener('change', () => {
       AppState.settings.defaultModel = el.defaultModelSelect.value;
