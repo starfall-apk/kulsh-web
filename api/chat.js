@@ -1,6 +1,10 @@
 // api/chat.js — Vercel Edge Function.
 // Стриминг ответа Gemini (SSE -> клиенту), ротация ключей APIKEY1..APIKEY5
 // при 429/5xx/сетевых сбоях, защита от пустых ответов.
+//
+// КРИТИЧНО: Vercel Edge убивает функцию по таймауту ~25с (Hobby).
+// Поэтому здесь есть ОБЩИЙ бюджет времени (BUDGET_MS) — если мы его
+// превышаем, отдаём понятную ошибку, вместо FUNCTION_INVOCATION_TIMEOUT.
 
 export const config = { runtime: 'edge' };
 
@@ -15,6 +19,11 @@ const ALLOWED_MODELS = new Set([
 ]);
 
 const FALLBACK_MODEL = 'gemini-2.5-flash';
+
+// Общий бюджет функции. Vercel Edge режет на ~25с, ставим 22с с запасом.
+const BUDGET_MS = 22000;
+// Таймаут на попытку открыть стрим для одного ключа.
+const PER_KEY_OPEN_TIMEOUT_MS = 6000;
 
 const SYSTEM_PROMPT = `Сейчас {{DATETIME}} по Москве. Учитывай это в контексте (утро, день, вечер, ночь), если уместно.
 
@@ -97,6 +106,7 @@ const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH',
   'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']
   .map((category) => ({ category, threshold: 'BLOCK_ONLY_HIGH' }));
 
+// Открывает стрим у Gemini. Бросает {retry, status, detail} при неудаче.
 async function openStream(key, model, contents, systemText, temperature, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
   const res = await fetch(url, {
@@ -117,6 +127,9 @@ async function openStream(key, model, contents, systemText, temperature, signal)
 }
 
 export default async function handler(req) {
+  const startedAt = Date.now();
+  const deadline = startedAt + BUDGET_MS;
+
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   let body;
@@ -130,7 +143,7 @@ export default async function handler(req) {
   const selectedModel = ALLOWED_MODELS.has(model) ? model : FALLBACK_MODEL;
   const keys = pickKeys(process.env);
   if (!keys.length) {
-    return sseError('Нет API-ключей. Добавь переменные окружения APIKEY1..APIKEY5 в настройках Vercel.');
+    return sseError('Нет API-ключей. Добавь переменные окружения APIKEY1..APIKEY5 в настройках Vercel и сделай Redeploy.');
   }
 
   let systemText = SYSTEM_PROMPT.replace('{{DATETIME}}', mskDatetime());
@@ -142,30 +155,44 @@ export default async function handler(req) {
   const start = Math.floor(Math.random() * keys.length);
   const order = keys.map((_, i) => keys[(start + i) % keys.length]);
 
-  // Список моделей для попытки: сначала выбранная, потом фолбэк (если отличается).
   const modelsToTry = [selectedModel];
   if (selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
 
   let upstream = null;
   let lastErr = null;
+  const tried = [];
 
   outer:
   for (const mdl of modelsToTry) {
-    for (const key of order) {
+    for (let ki = 0; ki < order.length; ki++) {
+      // Не начинаем новую попытку, если до дедлайна осталось меньше
+      // PER_KEY_OPEN_TIMEOUT_MS — иначе Vercel убьёт нас раньше, чем мы ответим.
+      const remain = deadline - Date.now();
+      if (remain <= PER_KEY_OPEN_TIMEOUT_MS) {
+        tried.push({ model: mdl, key: `#${ki + 1}`, result: 'skipped:time-budget' });
+        break outer;
+      }
+
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 12000);
+      const timer = setTimeout(() => ctrl.abort(), PER_KEY_OPEN_TIMEOUT_MS);
       try {
-        upstream = await openStream(key, mdl, contents, systemText, temperature, ctrl.signal);
+        upstream = await openStream(order[ki], mdl, contents, systemText, temperature, ctrl.signal);
         clearTimeout(timer);
+        tried.push({ model: mdl, key: `#${ki + 1}`, result: 'ok' });
         break outer;
       } catch (e) {
         clearTimeout(timer);
         lastErr = e;
         const isAbort = e && (e.name === 'AbortError');
-        // Таймаут/сеть/429/5xx/403 — пробуем следующий ключ.
-        // 400/404 — модель недоступна у ключа → пробуем следующую модель.
+        const status = e && e.status;
+        tried.push({
+          model: mdl, key: `#${ki + 1}`,
+          result: isAbort ? 'timeout' : ('http:' + (status || 'network')),
+        });
+        // Сеть/таймаут/429/5xx/403 → следующий ключ.
+        // 400/404 → у этого ключа модель недоступна, пробуем следующую модель.
         if (isAbort || !e || e.retry === undefined || e.retry) continue;
-        break; // выход из inner-цикла, продолжаем outer-цикл
+        break;
       }
     }
   }
@@ -176,14 +203,16 @@ export default async function handler(req) {
     if (status === 400 || status === 404) {
       msg = 'Эта модель недоступна для текущих API-ключей. Выбери другую модель в списке.';
     } else if (status === 403) {
-      msg = 'API-ключи не имеют доступа к Gemini. Проверь, что APIKEY1..APIKEY5 действительны.';
+      msg = 'API-ключи не имеют доступа к Gemini. Проверь, что APIKEY1..APIKEY5 действительны и включены в Google AI Studio.';
     } else if (lastErr && lastErr.detail) {
       try {
         const d = JSON.parse(lastErr.detail);
         if (d && d.error && d.error.message) msg = `Ошибка Gemini: ${d.error.message}`;
-      } catch { /* detail — не JSON, игнорируем */ }
+      } catch { /* detail — не JSON */ }
     }
-    return sseError(msg);
+    // Диагностика в консоль Vercel — чтобы видеть, что реально было.
+    console.error('[chat] all upstream attempts failed', { tried, lastStatus: status, elapsedMs: Date.now() - startedAt });
+    return sseError(msg + ' ' + `(попытки: ${tried.map(t => t.model + '@' + t.key + '=' + t.result).join(', ')})`);
   }
 
   const enc = new TextEncoder();
@@ -193,11 +222,20 @@ export default async function handler(req) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      const send = (obj) => controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      const send = (obj) => {
+        try { controller.enqueue(enc.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch {}
+      };
       const reader = upstream.body.getReader();
       let buf = '';
       try {
         while (true) {
+          // Прерываем чтение стрима, если подходим к общему дедлайну.
+          const remain = deadline - Date.now();
+          if (remain <= 0) {
+            send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
+            break;
+          }
+
           const { value, done } = await reader.read();
           if (done) break;
           buf += dec.decode(value, { stream: true });
@@ -222,13 +260,14 @@ export default async function handler(req) {
             }
           }
         }
-        if (total === 0) {
-          send({ error: blocked
-            ? `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.`
-            : 'Модель вернула пустой ответ. Нажми «Повторить».' });
+        if (total === 0 && !blocked) {
+          send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
+        } else if (total === 0 && blocked) {
+          send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
         }
         send({ done: true });
       } catch (err) {
+        console.error('[chat] stream read error', err);
         send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
       } finally {
         try { controller.close(); } catch {}
