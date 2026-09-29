@@ -4,6 +4,10 @@
 //
 // ВАЖНО: Gemini отдаёт SSE с CRLF-разделителями (\r\n\r\n), а не LF (\n\n).
 // Поэтому после декодирования нормализуем \r\n -> \n, иначе события не режутся.
+//
+// Кнопка «стоп» на фронте вызывает AbortController.abort() → fetch отменяется →
+// req.signal.aborted = true на сервере → мы отменяем upstream-запрос к Gemini
+// и закрываем стрим, не дожидаясь таймаута Vercel.
 
 export const config = { runtime: 'edge' };
 
@@ -157,13 +161,41 @@ export default async function handler(req) {
   const modelsToTry = [selectedModel];
   if (selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
 
+  // ---- Обработка разрыва соединения клиентом (кнопка «стоп») ----
+  // Когда фронт вызывает AbortController.abort(), Vercel получает разрыв и
+  // помечает req.signal.aborted = true. Мы подхватываем это и:
+  //   1) отменяем все активные upstream-запросы к Gemini (upstreamCtrls);
+  //   2) отменяем чтение тела уже открытого стрима (upstream.body.cancel()).
+  const clientSignal = req.signal;
+  const upstreamCtrls = new Set();
   let upstream = null;
+  let clientGone = false;
+
+  const abortUpstream = () => {
+    clientGone = true;
+    for (const c of upstreamCtrls) {
+      try { c.abort(); } catch {}
+    }
+    upstreamCtrls.clear();
+    if (upstream && upstream.body) {
+      try { upstream.body.cancel(); } catch {}
+    }
+  };
+
+  if (clientSignal) {
+    if (clientSignal.aborted) return new Response(null, { status: 499 });
+    clientSignal.addEventListener('abort', abortUpstream);
+  }
+
   let lastErr = null;
   const tried = [];
 
   outer:
   for (const mdl of modelsToTry) {
+    if (clientGone) break;
     for (let ki = 0; ki < order.length; ki++) {
+      if (clientGone) break outer;
+
       const remain = deadline - Date.now();
       if (remain <= PER_KEY_OPEN_TIMEOUT_MS) {
         tried.push({ model: mdl, key: `#${ki + 1}`, result: 'skipped:time-budget' });
@@ -171,17 +203,21 @@ export default async function handler(req) {
       }
 
       const ctrl = new AbortController();
+      upstreamCtrls.add(ctrl);
       const timer = setTimeout(() => ctrl.abort(), PER_KEY_OPEN_TIMEOUT_MS);
       try {
         upstream = await openStream(order[ki], mdl, contents, systemText, temperature, ctrl.signal);
         clearTimeout(timer);
+        upstreamCtrls.delete(ctrl);
         tried.push({ model: mdl, key: `#${ki + 1}`, result: 'ok' });
         break outer;
       } catch (e) {
         clearTimeout(timer);
+        upstreamCtrls.delete(ctrl);
         lastErr = e;
         const isAbort = e && (e.name === 'AbortError');
         const status = e && e.status;
+        if (clientGone) break outer;
         tried.push({
           model: mdl, key: `#${ki + 1}`,
           result: isAbort ? 'timeout' : ('http:' + (status || 'network')),
@@ -190,6 +226,10 @@ export default async function handler(req) {
         break;
       }
     }
+  }
+
+  if (clientGone) {
+    return new Response(null, { status: 499 });
   }
 
   if (!upstream) {
@@ -223,6 +263,10 @@ export default async function handler(req) {
       let buf = '';
       try {
         while (true) {
+          // 1) Клиент отвалился — прекращаем работу немедленно.
+          if (clientGone || (clientSignal && clientSignal.aborted)) break;
+
+          // 2) Общий бюджет функции исчерпан.
           const remain = deadline - Date.now();
           if (remain <= 0) {
             send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
@@ -233,8 +277,7 @@ export default async function handler(req) {
           if (done) break;
 
           // КРИТИЧНО: Gemini присылает SSE с CRLF-разделителями (\r\n\r\n).
-          // Нормализуем \r\n -> \n, иначе разделитель событий "\n\n" не найдётся,
-          // и мы никогда не разрежем буфер на события.
+          // Нормализуем \r\n -> \n, иначе разделитель событий "\n\n" не найдётся.
           const decoded = dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
           buf += decoded;
 
@@ -260,6 +303,11 @@ export default async function handler(req) {
           }
         }
 
+        // Если пользователь остановил — не шлём прощальных сообщений, соединение уже мертво.
+        if (clientGone || (clientSignal && clientSignal.aborted)) {
+          return;
+        }
+
         if (total === 0 && !blocked) {
           console.error('[chat] empty-response', { tried, elapsedMs: Date.now() - startedAt });
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
@@ -268,11 +316,18 @@ export default async function handler(req) {
         }
         send({ done: true });
       } catch (err) {
-        console.error('[chat] stream read error', err);
-        send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
+        // AbortError — это нормальный выход по кнопке «стоп», не логируем как ошибку.
+        if (!(err && err.name === 'AbortError') && !clientGone) {
+          console.error('[chat] stream read error', err);
+          send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
+        }
       } finally {
         try { controller.close(); } catch {}
       }
+    },
+    cancel() {
+      // Клиент закрыл reader (например, страница ушла или abort на фронте).
+      abortUpstream();
     },
   });
 
