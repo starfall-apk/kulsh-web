@@ -228,7 +228,7 @@ select, textarea { scrollbar-width: thin; }
   display: flex; flex-direction: column;
   background: var(--md-surface-container-low);
   border-right: 1px solid var(--md-outline-variant);
-  transition: margin var(--dur-m) var(--ease-emphasized), width var(--dur-m) var(--ease-emphasized);
+  transition: margin var(--dur-m) var(--ease-emphasized);
   padding: 12px;
   gap: 8px;
 }
@@ -238,7 +238,7 @@ select, textarea { scrollbar-width: thin; }
 .new-chat-btn { flex: 1; justify-content: flex-start; gap: 10px; padding: 0 16px; height: 44px; }
 
 .icon-btn {
-  width: 40px; height: 40px; border-radius: var(--r-full); /* 4px pad × 2 + 40px = 48px → radius 24px matches .composer exactly */
+  width: 40px; height: 40px; border-radius: var(--r-full);
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--md-on-surface-variant);
   transition: background var(--dur-s) var(--ease-standard), color var(--dur-s) var(--ease-standard);
@@ -279,13 +279,16 @@ select, textarea { scrollbar-width: thin; }
 .chat-list-item .chat-delete:hover { background: color-mix(in srgb, var(--md-error) 20%, transparent); color: var(--md-error); }
 .chat-list-item .material-symbols-rounded { font-size: 20px; flex-shrink: 0; }
 
-.sidebar-bottom { border-top: 1px solid var(--md-outline-variant); padding-top: 8px; }
+.sidebar-bottom { border-top: 1px solid var(--md-outline-variant); padding-top: 8px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-user {
   display: flex; align-items: center; gap: 12px; width: 100%;
   padding: 10px 14px; border-radius: var(--r-full);
   color: var(--md-on-surface); font-size: .875rem;
+  text-decoration: none;
 }
 .sidebar-user:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
+.sidebar-user .material-symbols-rounded { font-size: 20px; color: var(--md-on-surface-variant); }
+.sidebar-user:hover .material-symbols-rounded { color: var(--md-primary); }
 
 .sidebar-backdrop {
   display: none; position: fixed; inset: 0; z-index: 20;
@@ -300,7 +303,6 @@ select, textarea { scrollbar-width: thin; }
   height: 60px; padding: 0 16px; flex-shrink: 0;
   position: relative; z-index: 5;
 }
-/* Soft fade so content scrolling underneath is gently masked, like Claude/Gemini headers */
 /* Progressive blur: header edge melts into the content scrolling under it */
 .topbar::before {
   content: ""; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 34px);
@@ -315,8 +317,12 @@ select, textarea { scrollbar-width: thin; }
 
 .topbar-spacer { flex: 1; }
 
-.brand-mark { display: flex; align-items: center; gap: 8px; color: var(--md-on-surface-variant); font-weight: 500; font-size: .9rem; flex-shrink: 0; }
-.brand-mark img { width: 30px; height: 30px; object-fit: contain; }
+.brand-mark {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--md-on-surface-variant); font-weight: 500; font-size: .9rem;
+  flex-shrink: 0;
+}
+.brand-mark img { width: 30px; height: 30px; object-fit: contain; display: block; flex-shrink: 0; }
 
 /* --- Model picker --- */
 .model-picker { position: relative; }
@@ -407,7 +413,7 @@ select, textarea { scrollbar-width: thin; }
 /* --- Messages --- */
 .messages { width: 100%; max-width: 820px; margin: 0 auto; padding: 8px 20px 8px; display: flex; flex-direction: column; gap: 0; }
 
-.msg { display: flex; gap: 12px; padding: 3px 4px; animation: msgIn var(--dur-m) var(--ease-emphasized) both; }
+.msg { display: flex; gap: 12px; padding: 4px 4px 8px; animation: msgIn var(--dur-m) var(--ease-emphasized) both; }
 @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .msg-avatar {
@@ -425,7 +431,6 @@ select, textarea { scrollbar-width: thin; }
 .msg-content {
   font-size: var(--chat-font-size); line-height: 1.65; color: var(--md-on-surface);
   word-wrap: break-word;
-  contain: content;
 }
 .msg.assistant.is-streaming .msg-content::after {
   content: ""; display: inline-block; width: 8px; height: 1.05em; margin-left: 2px;
@@ -502,7 +507,7 @@ select, textarea { scrollbar-width: thin; }
 .msg-attachment-chip .material-symbols-rounded { font-size: 18px; }
 .msg-attachment-chip .chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.msg-actions { display: flex; gap: 2px; margin-top: 8px; opacity: 0; transition: opacity var(--dur-s); }
+.msg-actions { display: flex; gap: 2px; margin-top: 6px; margin-bottom: 2px; opacity: 0; transition: opacity var(--dur-s); min-height: 30px; }
 .msg:hover .msg-actions { opacity: 1; }
 .msg-actions button {
   width: 30px; height: 30px; border-radius: var(--r-full);
@@ -534,7 +539,7 @@ select, textarea { scrollbar-width: thin; }
 .composer {
   width: 100%; max-width: 820px;
   background: var(--md-surface-container-high);
-  border-radius: 25px; /* half of the 50px single-line height (40 + 2×4 pad + 2×1 border) → true pill */
+  border-radius: 25px;
   border: 1px solid var(--md-outline-variant);
   padding: 4px;
   transition: border-color var(--dur-s) var(--ease-standard), box-shadow var(--dur-s);
@@ -614,19 +619,37 @@ select, textarea { scrollbar-width: thin; }
   opacity: 0; visibility: hidden;
   transform: translate(-50%, -46%) scale(.96);
   transition: opacity var(--dur-m) var(--ease-emphasized), transform var(--dur-m) var(--ease-emphasized), visibility var(--dur-m);
+  will-change: transform, opacity;
 }
 .dialog.is-open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
 
 .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 20px 12px; flex-shrink: 0; }
 .dialog-header h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
 
-.dialog-tabs { display: flex; gap: 4px; padding: 0 16px; border-bottom: 1px solid var(--md-outline-variant); overflow-x: auto; flex-shrink: 0; }
-.dialog-tab {
-  padding: 10px 14px; font-size: .82rem; font-weight: 500; color: var(--md-on-surface-variant);
-  border-bottom: 2px solid transparent; white-space: nowrap;
-  transition: color var(--dur-s), border-color var(--dur-s);
+/* Tabs: wrap instead of horizontal scroll → русские длинные названия не «съезжают» */
+.dialog-tabs {
+  display: flex; flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 0 16px 6px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  flex-shrink: 0;
+  justify-content: flex-start;
+  align-items: stretch;
 }
-.dialog-tab:hover { color: var(--md-on-surface); }
+.dialog-tab {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 14px;
+  font-size: .82rem; font-weight: 500;
+  color: var(--md-on-surface-variant);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: center;
+  line-height: 1.2;
+  transition: color var(--dur-s), border-color var(--dur-s), background var(--dur-s);
+  border-radius: 10px 10px 0 0;
+}
+.dialog-tab:hover { color: var(--md-on-surface); background: color-mix(in srgb, var(--md-on-surface) 5%, transparent); }
 .dialog-tab.is-active { color: var(--md-primary); border-color: var(--md-primary); }
 
 .dialog-body { flex: 1; overflow-y: auto; padding: 8px 20px 24px; }
@@ -675,21 +698,96 @@ select, textarea { scrollbar-width: thin; }
 .swatch {
   width: 32px; height: 32px; border-radius: 50%; position: relative;
   border: 2px solid transparent;
+  transition: transform var(--dur-s) var(--ease-standard), box-shadow var(--dur-s) var(--ease-standard);
 }
-.swatch.is-active { border-color: var(--md-on-surface); }
+.swatch:hover { transform: scale(1.08); }
+.swatch.is-active {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px var(--md-surface-container-high),
+    0 0 0 4px var(--md-primary);
+}
+/* Fixed white check with drop-shadow — видно на любом цвете свотча,
+   никакого mix-blend-mode: difference (который давал рандомные цвета). */
 .swatch.is-active::after {
-  content: "check"; font-family: "Material Symbols Rounded"; font-size: 16px;
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: #fff; mix-blend-mode: difference;
+  content: "check";
+  font-family: "Material Symbols Rounded";
+  font-variation-settings: 'FILL' 1, 'wght' 600, 'opsz' 20;
+  font-size: 18px;
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #ffffff;
+  text-shadow: 0 0 4px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.7);
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.4));
+  pointer-events: none;
 }
 
+/* ===== M3 SLIDER ===== */
 .slider {
-  -webkit-appearance: none; width: 160px; height: 4px; border-radius: 2px;
-  background: var(--md-outline-variant); flex-shrink: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;
+  height: 20px;
+  background: transparent;
+  flex-shrink: 0;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--md-primary) 0%,
+    var(--md-primary) var(--slider-pct, 0%),
+    var(--md-outline-variant) var(--slider-pct, 0%),
+    var(--md-outline-variant) 100%
+  );
 }
 .slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-  background: var(--md-primary); cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: none;
+  box-shadow: 0 1px 3px var(--md-shadow);
+  transition: box-shadow var(--dur-s) var(--ease-standard);
+}
+.slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 1px 3px var(--md-shadow), 0 0 0 6px color-mix(in srgb, var(--md-primary) 14%, transparent);
+}
+.slider:active::-webkit-slider-thumb {
+  box-shadow: 0 1px 3px var(--md-shadow), 0 0 0 10px color-mix(in srgb, var(--md-primary) 20%, transparent);
+}
+.slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 1px 3px var(--md-shadow), 0 0 0 6px color-mix(in srgb, var(--md-primary) 26%, transparent);
+}
+.slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--md-outline-variant);
+  border: none;
+}
+.slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--md-primary);
+}
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 3px var(--md-shadow);
 }
 
 .about-block { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 24px 0; }
@@ -720,8 +818,29 @@ select, textarea { scrollbar-width: thin; }
   .msg-content, .msg-body { overflow-wrap: anywhere; }
   .msg-content pre, .msg-content .table-wrap { max-width: 100%; }
 
-  /* Header: everything fits in one row, nothing crosses the screen edge */
-  .topbar { padding: 0 8px; padding-top: env(safe-area-inset-top, 0px); height: calc(56px + env(safe-area-inset-top, 0px)); gap: 2px; min-width: 0; }
+  /* Header: everything fits in one row, nothing crosses the screen edge.
+     Padding через max(14px, safe-area) — логотип ровно в 14px от края
+     на любом телефоне, с учётом «чёлки» и выреза камеры. */
+  .topbar {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(56px + env(safe-area-inset-top, 0px));
+    gap: 4px;
+    min-width: 0;
+  }
+  /* Тяжёлый blur под шапкой — главный источник лагов на телефоне.
+     Отключаем backdrop-filter и заменяем на плотный градиент. */
+  .topbar::before {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: linear-gradient(
+      to bottom,
+      var(--md-surface) 0%,
+      var(--md-surface) 70%,
+      transparent 100%
+    );
+  }
   .chat-scroll { margin-top: calc(-56px - env(safe-area-inset-top, 0px)); padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
   .brand-mark span { display: none; }
   .model-picker { min-width: 0; flex: 0 1 auto; position: static; }
@@ -729,7 +848,6 @@ select, textarea { scrollbar-width: thin; }
   .model-picker-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .topbar-spacer { flex: 1 1 0; min-width: 0; }
 
-  /* Model list: horizontally centered on the screen, never clipped by the right edge */
   .model-picker-menu {
     position: fixed; top: calc(56px + env(safe-area-inset-top, 0px) + 4px); bottom: auto;
     left: 50%; right: auto; width: min(calc(100vw - 24px), 380px);
@@ -738,10 +856,15 @@ select, textarea { scrollbar-width: thin; }
   }
   .model-picker.is-open .model-picker-menu { transform: translateX(-50%) translateY(0) scale(1); }
 
-  /* Settings: full-screen page */
+  /* Settings: full-screen page. Тёмный фон --md-surface (как у остального
+     приложения), без box-shadow (на весь экран он не виден, только тратит GPU). */
   .dialog.settings-dialog {
-    top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; max-height: none; max-height: 100dvh;
-    border-radius: 0; transform: translate(0, 16px);
+    top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
+    max-height: none; max-height: 100dvh;
+    background: var(--md-surface);
+    border-radius: 0;
+    box-shadow: none;
+    transform: translate(0, 16px);
   }
   .dialog.settings-dialog.is-open { transform: translate(0, 0) scale(1); }
   .dialog-header { padding: calc(14px + env(safe-area-inset-top, 0px)) 12px 8px 20px; }
@@ -791,8 +914,18 @@ select, textarea { scrollbar-width: thin; }
 :root[data-width="wide"] .messages { max-width: 980px; }
 :root[data-width="narrow"] .composer { max-width: 680px; }
 :root[data-width="wide"] .composer { max-width: 980px; }
-:root[data-density="compact"] .msg { padding: 1px 4px; }
-:root[data-density="relaxed"] .msg { padding: 8px 4px; }
+
+/* Плотный режим: раньше padding: 1px давал наезд кнопок на следующее
+   сообщение. Теперь 3px + меньше margin у кнопок — компактно, но без overlap. */
+:root[data-density="compact"] .msg { padding: 3px 4px 5px; }
+:root[data-density="compact"] .msg-actions { margin-top: 4px; margin-bottom: 0; min-height: 26px; }
+:root[data-density="compact"] .msg-actions button { width: 26px; height: 26px; }
+:root[data-density="compact"] .msg-actions .material-symbols-rounded { font-size: 16px; }
+:root[data-density="compact"] .msg-content { line-height: 1.5; }
+
+:root[data-density="relaxed"] .msg { padding: 10px 4px 14px; }
+:root[data-density="relaxed"] .msg-actions { margin-top: 8px; }
+
 :root[data-font="roboto"] .msg-content { font-family: var(--font-body); }
 :root[data-font="flex"] .msg-content { font-family: var(--font-display); }
 :root[data-font="system"] .msg-content { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }

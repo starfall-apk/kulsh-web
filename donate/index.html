@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark" data-accent="violet">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<title>Поддержать KulshGPT</title>
+<meta name="description" content="Поддержать развитие KulshGPT — Telegram Stars или DonationAlerts." />
+<meta name="theme-color" content="#141019" />
+<meta name="color-scheme" content="dark light" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400..700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600;8..144,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.4/dist/lottie-player.js"></script>
+
+<style>
+/* ========================================================================
+   Donate — M3, те же токены, что и основной чат KulshGPT.
+   ======================================================================== */
+
+:root {
+  --md-surface: #141019;
+  --md-surface-dim: #0e0b13;
+  --md-surface-container-lowest: #0b0910;
+  --md-surface-container-low: #1a1620;
+  --md-surface-container: #201b29;
+  --md-surface-container-high: #2b2434;
+  --md-surface-container-highest: #362e40;
+
+  --md-on-surface: #ECE6F5;
+  --md-on-surface-variant: #B0A8C0;
+  --md-outline: #4A4258;
+  --md-outline-variant: #322b3d;
+
+  --md-primary: #B98CFF;
+  --md-on-primary: #2A0F5C;
+  --md-primary-container: #3D2470;
+  --md-on-primary-container: #E4D3FF;
+
+  --md-secondary-container: #2D2739;
+  --md-on-secondary-container: #D8CFE6;
+
+  --md-error: #FFB4AB;
+  --md-error-container: #5c1e18;
+  --md-on-error-container: #FFDAD6;
+
+  --md-shadow: rgba(0,0,0,.45);
+  --md-scrim: rgba(6, 4, 10, .6);
+
+  --bg-glow-1: 169,116,255;
+  --bg-glow-2: 94,110,235;
+  --bg-glow-3: 88,180,214;
+  --bg-glow-4: 196,155,255;
+
+  --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 28px; --r-full: 999px;
+
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(.3, 0, 0, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-s: 150ms; --dur-m: 260ms; --dur-l: 420ms;
+
+  --font-display: "Roboto Flex", "Roboto", system-ui, sans-serif;
+  --font-body: "Roboto", system-ui, sans-serif;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --md-surface: #FCF8FF;
+  --md-surface-dim: #DED8E8;
+  --md-surface-container-lowest: #FFFFFF;
+  --md-surface-container-low: #F6F1FA;
+  --md-surface-container: #F0EAF6;
+  --md-surface-container-high: #EAE3F2;
+  --md-surface-container-highest: #E4DCEE;
+  --md-on-surface: #1D1A22;
+  --md-on-surface-variant: #4B4557;
+  --md-outline: #7C7488;
+  --md-outline-variant: #CCC3D9;
+  --md-primary: #7A3FE0;
+  --md-on-primary: #FFFFFF;
+  --md-primary-container: #ECDCFF;
+  --md-on-primary-container: #290065;
+  --md-secondary-container: #E9E0F5;
+  --md-on-secondary-container: #362F42;
+  --md-shadow: rgba(60,40,90,.16);
+  --md-scrim: rgba(30, 20, 45, .35);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  display: flex; flex-direction: column;
+  transition: background var(--dur-m) var(--ease-standard), color var(--dur-m) var(--ease-standard);
+}
+img { max-width: 100%; display: block; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+input { font: inherit; color: inherit; }
+::selection { background: color-mix(in srgb, var(--md-primary) 35%, transparent); }
+.material-symbols-rounded { font-variation-settings: 'opsz' 24, 'wght' 400, 'FILL' 0, 'GRAD' 0; line-height: 1; user-select: none; }
+
+/* ===== BG (тот же слой, что в чате) ===== */
+.bg-layer {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; overflow: hidden; contain: strict;
+}
+.bg-shimmer { position: absolute; inset: -35%; }
+.bg-base {
+  position: absolute; inset: -25%;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 25%, rgba(var(--bg-glow-1),.22), transparent 70%),
+    radial-gradient(ellipse 45% 55% at 82% 15%, rgba(var(--bg-glow-2),.16), transparent 70%),
+    radial-gradient(ellipse 55% 50% at 65% 85%, rgba(var(--bg-glow-3),.11), transparent 70%),
+    radial-gradient(ellipse 40% 45% at 8% 82%, rgba(var(--bg-glow-4),.14), transparent 70%);
+  animation: bgDrift 42s ease-in-out infinite;
+  will-change: transform;
+}
+.bg-shine {
+  position: absolute; inset: -35%;
+  background: linear-gradient(115deg, transparent 40%, rgba(var(--bg-glow-1),.08) 47%, rgba(var(--bg-glow-3),.05) 50%, rgba(var(--bg-glow-1),.08) 53%, transparent 60%);
+  animation: shineSweep 28s ease-in-out infinite;
+  will-change: transform;
+}
+.bg-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 90% 70% at 50% 40%, transparent 40%, var(--md-surface) 100%);
+}
+@keyframes bgDrift {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50%      { transform: translate3d(-2%, 2%, 0) scale(1.03); }
+}
+@keyframes shineSweep {
+  0%, 100% { transform: translate3d(-10%, -6%, 0); }
+  50%      { transform: translate3d(10%, 6%, 0); }
+}
+@media (max-width: 640px), (pointer: coarse) {
+  .bg-shine { display: none; }
+  .bg-base { animation-duration: 60s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-base, .bg-shine { animation: none !important; }
+}
+
+/* ===== HEADER ===== */
+.donate-header {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 8px;
+  height: 60px;
+  padding: 0 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(60px + env(safe-area-inset-top, 0px));
+  background: linear-gradient(to bottom,
+    var(--md-surface) 0%,
+    color-mix(in srgb, var(--md-surface) 88%, transparent) 60%,
+    transparent 100%);
+  flex-shrink: 0;
+}
+.donate-header .icon-btn {
+  width: 40px; height: 40px; border-radius: var(--r-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--md-on-surface-variant);
+  transition: background var(--dur-s) var(--ease-standard), color var(--dur-s);
+  flex-shrink: 0;
+}
+.donate-header .icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--md-on-surface); }
+.donate-header .title {
+  font-family: var(--font-display);
+  font-weight: 600; font-size: .95rem;
+  color: var(--md-on-surface);
+}
+.donate-header .brand {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+  color: var(--md-on-surface-variant); font-size: .85rem; font-weight: 500;
+  flex-shrink: 0;
+}
+.donate-header .brand img { width: 28px; height: 28px; object-fit: contain; display: block; }
+
+/* ===== LAYOUT ===== */
+.donate-main {
+  flex: 1;
+  width: 100%; max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  position: relative; z-index: 1;
+}
+
+.hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 12px 0 20px;
+  gap: 4px;
+}
+.lottie-wrap {
+  width: 148px; height: 148px;
+  display: grid; place-items: center;
+  margin-bottom: 4px;
+}
+.lottie-wrap lottie-player { width: 100%; height: 100%; }
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.2;
+  background: linear-gradient(135deg, var(--md-on-surface), var(--md-primary) 130%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  margin-top: 4px;
+}
+.hero p {
+  color: var(--md-on-surface-variant);
+  font-size: .95rem;
+  max-width: 46ch;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* ===== CARD ===== */
+.donate-card {
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-xl);
+  padding: 24px 20px;
+  margin-top: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.section-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .78rem; font-weight: 600;
+  color: var(--md-primary);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 0 4px;
+}
+.section-label .material-symbols-rounded { font-size: 18px; }
+
+.amount-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.amount-pill {
+  padding: 12px 0;
+  border-radius: var(--r-full);
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  color: var(--md-on-surface);
+  font-weight: 600;
+  font-size: .95rem;
+  text-align: center;
+  transition: background var(--dur-s), border-color var(--dur-s), transform var(--dur-s);
+}
+.amount-pill:hover { background: var(--md-surface-container-highest); border-color: var(--md-outline); }
+.amount-pill.is-active {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border-color: var(--md-primary);
+}
+
+.custom-amount-wrap { position: relative; }
+.custom-amount-input {
+  width: 100%;
+  padding: 14px 44px 14px 16px;
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-md);
+  color: var(--md-on-surface);
+  font-size: 1.05rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color var(--dur-s);
+  -webkit-appearance: none; appearance: none;
+}
+.custom-amount-input:focus { border-color: var(--md-primary); }
+.custom-amount-input::-webkit-outer-spin-button,
+.custom-amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.currency-sign {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  color: var(--md-on-surface-variant); font-weight: 600; pointer-events: none;
+}
+
+/* ===== METHODS ===== */
+.method-stack { display: flex; flex-direction: column; gap: 10px; }
+.method-btn {
+  position: relative;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  color: var(--md-on-surface);
+  transition: background var(--dur-s), border-color var(--dur-s), transform var(--dur-s);
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+}
+.method-btn:hover {
+  background: var(--md-surface-container-highest);
+  border-color: var(--md-outline);
+  transform: translateY(-1px);
+}
+.method-btn .method-icon {
+  width: 42px; height: 42px;
+  border-radius: var(--r-md);
+  display: grid; place-items: center;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  flex-shrink: 0;
+}
+.method-btn .method-icon .material-symbols-rounded { font-size: 22px; }
+.method-btn .method-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.method-btn .method-text .name { font-weight: 600; font-size: .95rem; }
+.method-btn .method-text .sub { font-size: .78rem; color: var(--md-on-surface-variant); }
+.method-btn .method-arrow { color: var(--md-on-surface-variant); transition: transform var(--dur-s); flex-shrink: 0; }
+.method-btn:hover .method-arrow { transform: translateX(2px); color: var(--md-primary); }
+
+/* Telegram Stars — золотистый акцент */
+.method-btn.is-stars .method-icon {
+  background: color-mix(in srgb, #F4C430 20%, transparent);
+  color: #F4C430;
+}
+/* DonationAlerts — оранжевый акцент + бейдж */
+.method-btn.is-da .method-icon {
+  background: color-mix(in srgb, #FF7300 20%, transparent);
+  color: #FF7300;
+}
+.recommended-badge {
+  position: absolute;
+  top: 0; right: 0;
+  padding: 4px 10px;
+  background: #FF7300;
+  color: #1a0f00;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-radius: 0 var(--r-lg) 0 var(--r-md);
+  line-height: 1.2;
+}
+
+.note {
+  font-size: .78rem;
+  color: var(--md-on-surface-variant);
+  line-height: 1.6;
+  padding: 0 4px;
+}
+
+.footer {
+  padding: 20px 0 12px;
+  text-align: center;
+  font-size: .75rem;
+  color: var(--md-on-surface-variant);
+  opacity: .8;
+}
+
+/* mobile */
+@media (max-width: 480px) {
+  .amount-grid { grid-template-columns: repeat(2, 1fr); }
+  .donate-card { padding: 20px 16px; }
+  .lottie-wrap { width: 132px; height: 132px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer">
+    <div class="bg-base"></div>
+    <div class="bg-shine"></div>
+  </div>
+  <div class="bg-vignette"></div>
+</div>
+
+<header class="donate-header">
+  <a class="icon-btn" href="/" aria-label="На главную">
+    <span class="material-symbols-rounded">arrow_back</span>
+  </a>
+  <span class="title">Поддержать KulshGPT</span>
+  <div class="brand">
+    <img src="/assets/logo.png" alt="KulshGPT" />
+  </div>
+</header>
+
+<main class="donate-main">
+  <section class="hero">
+    <div class="lottie-wrap">
+      <lottie-player
+        src="gift.json"
+        background="transparent"
+        speed="1"
+        loop
+        autoplay
+        style="width:100%;height:100%;">
+      </lottie-player>
+    </div>
+    <h1>Поддержите Кульша</h1>
+    <p>Средства идут на оплату серверов, хостинга и расширение лимитов нейросети.</p>
+  </section>
+
+  <section class="donate-card">
+    <div class="section-label">
+      <span class="material-symbols-rounded">payments</span>
+      <span>1. Сумма поддержки</span>
+    </div>
+
+    <div class="amount-grid" id="amountGrid">
+      <button class="amount-pill is-active" data-val="100">100 ₽</button>
+      <button class="amount-pill" data-val="300">300 ₽</button>
+      <button class="amount-pill" data-val="500">500 ₽</button>
+      <button class="amount-pill" data-val="1000">1000 ₽</button>
+    </div>
+
+    <div class="custom-amount-wrap">
+      <input id="customAmount" class="custom-amount-input" type="number" value="100" min="10" placeholder="Другая сумма" />
+      <span class="currency-sign">₽</span>
+    </div>
+
+    <div class="section-label">
+      <span class="material-symbols-rounded">account_balance_wallet</span>
+      <span>2. Способ оплаты</span>
+    </div>
+
+    <div class="method-stack">
+      <button class="method-btn is-stars" id="payStars" type="button">
+        <span class="method-icon"><span class="material-symbols-rounded">stars</span></span>
+        <span class="method-text">
+          <span class="name">Telegram Stars</span>
+          <span class="sub" id="starsSub">Оплата ~50 🌟 через интерфейс Telegram</span>
+        </span>
+        <span class="material-symbols-rounded method-arrow">arrow_forward</span>
+      </button>
+
+      <button class="method-btn is-da" id="payDa" type="button">
+        <span class="recommended-badge">Рекомендуемый</span>
+        <span class="method-icon"><span class="material-symbols-rounded">bolt</span></span>
+        <span class="method-text">
+          <span class="name">DonationAlerts</span>
+          <span class="sub">Карты РФ, СБП, ЮMoney, QIWI, Crypto</span>
+        </span>
+        <span class="material-symbols-rounded method-arrow">arrow_forward</span>
+      </button>
+    </div>
+
+    <p class="note">
+      При оплате Звёздами вас перенаправит в диалог с ботом, где он мгновенно выставит официальный инвойс Telegram Stars.
+    </p>
+  </section>
+
+  <p class="footer">© 2026 KulshGPT · Open Source</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // Telegram WebApp init (если открыто внутри Telegram)
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    try {
+      tg.setHeaderColor('#141019');
+      tg.setBackgroundColor('#141019');
+    } catch (e) {}
+  }
+
+  var RATE = 1.335;               // 1 звезда ≈ 1.335 ₽
+  var BOT_USERNAME = 'Kulsh_aibot';
+  var DA_USER = 'downfalls';
+
+  var pills = document.querySelectorAll('.amount-pill');
+  var customInput = document.getElementById('customAmount');
+  var starsSub = document.getElementById('starsSub');
+
+  function updateStars(rubles) {
+    var stars = Math.max(1, Math.ceil(rubles / RATE));
+    starsSub.textContent = 'Оплата ~' + stars + ' 🌟 через интерфейс Telegram';
+  }
+
+  function syncPillsFromInput() {
+    var val = parseInt(customInput.value, 10) || 0;
+    var matched = false;
+    pills.forEach(function (p) {
+      if (parseInt(p.getAttribute('data-val'), 10) === val) {
+        p.classList.add('is-active');
+        matched = true;
+      } else {
+        p.classList.remove('is-active');
+      }
+    });
+    if (!matched) pills.forEach(function (p) { p.classList.remove('is-active'); });
+    updateStars(val);
+  }
+
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      pills.forEach(function (p) { p.classList.remove('is-active'); });
+      pill.classList.add('is-active');
+      var v = parseInt(pill.getAttribute('data-val'), 10) || 100;
+      customInput.value = v;
+      updateStars(v);
+    });
+  });
+
+  customInput.addEventListener('input', syncPillsFromInput);
+
+  function openLink(url) {
+    if (tg && tg.openLink) {
+      try { tg.openLink(url); return; } catch (e) {}
+    }
+    if (tg && tg.openTelegramLink && url.indexOf('t.me/') !== -1) {
+      try { tg.openTelegramLink(url); return; } catch (e) {}
+    }
+    window.open(url, '_blank', 'noopener');
+  }
+
+  document.getElementById('payStars').addEventListener('click', function () {
+    var rubles = parseInt(customInput.value, 10) || 100;
+    var stars = Math.max(1, Math.ceil(rubles / RATE));
+    openLink('https://t.me/' + BOT_USERNAME + '?start=donate_stars_' + stars);
+  });
+
+  document.getElementById('payDa').addEventListener('click', function () {
+    var rubles = parseInt(customInput.value, 10) || 100;
+    openLink('https://www.donationalerts.com/r/' + DA_USER + '?amount=' + rubles);
+  });
+
+  updateStars(100);
+})();
+</script>
+</body>
+</html>

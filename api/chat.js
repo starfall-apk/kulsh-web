@@ -14,6 +14,8 @@ const ALLOWED_MODELS = new Set([
   'gemini-3.8-flash',
 ]);
 
+const FALLBACK_MODEL = 'gemini-2.5-flash';
+
 const SYSTEM_PROMPT = `Сейчас {{DATETIME}} по Москве. Учитывай это в контексте (утро, день, вечер, ночь), если уместно.
 
 Ты — Кульш, современная опенсорс языковая модель ИИ, способная писать базовый код и общаться максимально реалистично и естественно. Тебя разработал Фолз, он же один из твоих кентов. Ссылка на твой репозиторий на GitHub: https://github.com/starfall-apk/kulsh.
@@ -70,7 +72,7 @@ function toContents(messages) {
         }
       }
     }
-    if (!parts.length) continue; // пустые сообщения не отправляем — они ломают ответ
+    if (!parts.length) continue;
     out.push({ role: m.role === 'assistant' ? 'model' : 'user', parts });
   }
   return out;
@@ -79,11 +81,22 @@ function toContents(messages) {
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 
+// ВСЕГДА отдаём ошибки как SSE — иначе клиент не увидит текст и покажет generic.
+function sseError(message) {
+  const body = `data: ${JSON.stringify({ error: message })}\n\ndata: {"done":true}\n\n`;
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  });
+}
+
 const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH',
   'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']
   .map((category) => ({ category, threshold: 'BLOCK_ONLY_HIGH' }));
 
-// Открывает стрим у Gemini. Возвращает Response, если он ok, иначе бросает {retry, status, detail}.
 async function openStream(key, model, contents, systemText, temperature, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
   const res = await fetch(url, {
@@ -107,17 +120,17 @@ export default async function handler(req) {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   let body;
-  try { body = await req.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+  try { body = await req.json(); } catch { return sseError('Некорректный JSON в запросе.'); }
 
   const { messages, model, temperature: rawTemp, customPrompt } = body || {};
   const temperature = Math.min(1.5, Math.max(0, Number.isFinite(+rawTemp) ? +rawTemp : 0.9));
   const contents = Array.isArray(messages) ? toContents(messages) : [];
-  if (!contents.length) return json({ error: 'Пустой запрос.' }, 400);
+  if (!contents.length) return sseError('Пустой запрос — нет текста и вложений.');
 
-  const selectedModel = ALLOWED_MODELS.has(model) ? model : 'gemini-3.5-flash';
+  const selectedModel = ALLOWED_MODELS.has(model) ? model : FALLBACK_MODEL;
   const keys = pickKeys(process.env);
   if (!keys.length) {
-    return json({ error: 'Нет API-ключей. Проверь переменные окружения APIKEY1..APIKEY5 на Vercel.' }, 500);
+    return sseError('Нет API-ключей. Добавь переменные окружения APIKEY1..APIKEY5 в настройках Vercel.');
   }
 
   let systemText = SYSTEM_PROMPT.replace('{{DATETIME}}', mskDatetime());
@@ -129,23 +142,31 @@ export default async function handler(req) {
   const start = Math.floor(Math.random() * keys.length);
   const order = keys.map((_, i) => keys[(start + i) % keys.length]);
 
-  // Ждём первый ответ с таймаутом на каждый ключ (чтобы не упереться в 25 c Vercel).
+  // Список моделей для попытки: сначала выбранная, потом фолбэк (если отличается).
+  const modelsToTry = [selectedModel];
+  if (selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
+
   let upstream = null;
   let lastErr = null;
-  for (const key of order) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12000);
-    try {
-      upstream = await openStream(key, selectedModel, contents, systemText, temperature, ctrl.signal);
-      clearTimeout(timer);
-      break;
-    } catch (e) {
-      clearTimeout(timer);
-      lastErr = e;
-      // Таймаут/сеть/429/5xx/403 — пробуем следующий ключ. 400/404 — ошибка модели, дальше нет смысла.
-      const isAbort = e && (e.name === 'AbortError');
-      if (isAbort || !e || e.retry === undefined || e.retry) continue;
-      break;
+
+  outer:
+  for (const mdl of modelsToTry) {
+    for (const key of order) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 12000);
+      try {
+        upstream = await openStream(key, mdl, contents, systemText, temperature, ctrl.signal);
+        clearTimeout(timer);
+        break outer;
+      } catch (e) {
+        clearTimeout(timer);
+        lastErr = e;
+        const isAbort = e && (e.name === 'AbortError');
+        // Таймаут/сеть/429/5xx/403 — пробуем следующий ключ.
+        // 400/404 — модель недоступна у ключа → пробуем следующую модель.
+        if (isAbort || !e || e.retry === undefined || e.retry) continue;
+        break; // выход из inner-цикла, продолжаем outer-цикл
+      }
     }
   }
 
@@ -153,12 +174,18 @@ export default async function handler(req) {
     const status = lastErr && lastErr.status;
     let msg = 'Все ключи сейчас недоступны (лимиты или перегрузка). Попробуй через минуту.';
     if (status === 400 || status === 404) {
-      msg = 'Эта модель недоступна для текущих API-ключей. Выбери другую модель.';
+      msg = 'Эта модель недоступна для текущих API-ключей. Выбери другую модель в списке.';
+    } else if (status === 403) {
+      msg = 'API-ключи не имеют доступа к Gemini. Проверь, что APIKEY1..APIKEY5 действительны.';
+    } else if (lastErr && lastErr.detail) {
+      try {
+        const d = JSON.parse(lastErr.detail);
+        if (d && d.error && d.error.message) msg = `Ошибка Gemini: ${d.error.message}`;
+      } catch { /* detail — не JSON, игнорируем */ }
     }
-    return json({ error: msg, status: status || 0 }, 200);
+    return sseError(msg);
   }
 
-  // Преобразуем SSE Gemini -> простой SSE для клиента: data: {"t":"текст"}
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   let total = 0;
@@ -184,13 +211,13 @@ export default async function handler(req) {
               if (!payload || payload === '[DONE]') continue;
               let data;
               try { data = JSON.parse(payload); } catch { continue; }
-              const br = data?.promptFeedback?.blockReason;
+              const br = data && data.promptFeedback && data.promptFeedback.blockReason;
               if (br) blocked = br;
-              const cand = data?.candidates?.[0];
-              if (cand?.finishReason && cand.finishReason !== 'STOP' && cand.finishReason !== 'MAX_TOKENS' && !cand?.content?.parts?.length) {
+              const cand = data && data.candidates && data.candidates[0];
+              if (cand && cand.finishReason && cand.finishReason !== 'STOP' && cand.finishReason !== 'MAX_TOKENS' && !(cand.content && cand.content.parts && cand.content.parts.length)) {
                 blocked = blocked || cand.finishReason;
               }
-              const text = (cand?.content?.parts || []).map((p) => p.text || '').join('');
+              const text = ((cand && cand.content && cand.content.parts) || []).map((p) => p.text || '').join('');
               if (text) { total += text.length; send({ delta: text }); }
             }
           }
@@ -204,7 +231,7 @@ export default async function handler(req) {
       } catch (err) {
         send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
       } finally {
-        controller.close();
+        try { controller.close(); } catch {}
       }
     },
   });

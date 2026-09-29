@@ -42,7 +42,7 @@
       animatedBg: true,
       fontSize: 'md',
       sendOnEnter: true,
-      defaultModel: 'gemini-3.5-flash',
+      defaultModel: 'gemini-2.5-flash',
       voiceAutoplay: false,
       voiceRate: 1,
       voiceURI: '',
@@ -163,6 +163,19 @@
     return AppState.settings.theme;
   }
 
+  function updateSliderFill(rangeEl) {
+    if (!rangeEl) return;
+    const min = parseFloat(rangeEl.min) || 0;
+    const max = parseFloat(rangeEl.max) || 100;
+    const val = parseFloat(rangeEl.value) || 0;
+    const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+    rangeEl.style.setProperty('--slider-pct', pct + '%');
+  }
+
+  function refreshAllSliderFills() {
+    document.querySelectorAll('.slider').forEach(updateSliderFill);
+  }
+
   function applySettingsToDOM() {
     const root = document.documentElement;
     root.setAttribute('data-theme', effectiveTheme());
@@ -198,6 +211,7 @@
     renderAccentSwatches();
     renderModelPicker();
     renderSuggestions();
+    refreshAllSliderFills();
   }
 
   function renderAccentSwatches() {
@@ -283,7 +297,7 @@
   function renderModelPicker() {
     const chat = getActiveChat();
     const currentModelId = chat ? chat.model : AppState.settings.defaultModel;
-    const current = MODELS.find((m) => m.id === currentModelId) || MODELS[2];
+    const current = MODELS.find((m) => m.id === currentModelId) || MODELS[0];
     el.modelPickerName.textContent = current.name.replace(/^Gemini\s*/i, '');
 
     el.modelPickerMenu.innerHTML = '';
@@ -435,8 +449,6 @@
     }
     el.emptyState.style.display = 'none';
 
-    // Fast path: only the last message changed (streaming token, pending->done) and the
-    // count of rendered nodes matches — patch that one node instead of rebuilding everything.
     const lastMsg = chat.messages[chat.messages.length - 1];
     const existingNodes = el.messages.children;
     if (existingNodes.length === chat.messages.length && lastMsg) {
@@ -471,10 +483,9 @@
     } else {
       content.innerHTML = renderMarkdown(m.text);
     }
-    // once streaming finishes, actions (copy/speak/regenerate) need to appear — simplest is a full row rebuild
     if (!m.pending && !m.streaming && !node.querySelector('.msg-actions')) {
       const fresh = buildMessageNode(m);
-      fresh.style.animation = 'none'; // no second entrance flash when streaming completes
+      fresh.style.animation = 'none';
       node.replaceWith(fresh);
       enhanceCodeBlocks(fresh);
     }
@@ -635,7 +646,7 @@
   }
 
   // ============================================================
-  // SENDING / STREAMING (non-stream fetch, shown progressively)
+  // SENDING / STREAMING (fallback: animate typing if not streamed)
   // ============================================================
   function autoGrow() {
     el.composerInput.style.height = 'auto';
@@ -682,6 +693,28 @@
     await requestAssistantReply(chat);
   }
 
+  async function animateTyping(msgId, fullText) {
+    const chat = getActiveChat();
+    if (!chat) return;
+    const idx = chat.messages.findIndex((m) => m.id === msgId);
+    if (idx === -1) return;
+
+    const total = fullText.length;
+    if (total === 0) return;
+    const duration = Math.min(2400, Math.max(500, total * 9));
+    const stepMs = 16;
+    const chunk = Math.max(1, Math.ceil(total / Math.max(1, Math.floor(duration / stepMs))));
+
+    for (let i = 0; i < total; i += chunk) {
+      const end = Math.min(total, i + chunk);
+      chat.messages[idx].text = fullText.slice(0, end);
+      renderMessages();
+      await new Promise((r) => setTimeout(r, stepMs));
+    }
+    chat.messages[idx] = { id: msgId, role: 'assistant', text: fullText };
+    renderMessages();
+  }
+
   async function requestAssistantReply(chat) {
     const pendingMsg = { id: uid(), role: 'assistant', text: '', pending: true };
     chat.messages.push(pendingMsg);
@@ -698,7 +731,12 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payloadMessages, model: chat.model, temperature: AppState.settings.temperature, customPrompt: AppState.settings.customPrompt || '' }),
+        body: JSON.stringify({
+          messages: payloadMessages,
+          model: chat.model,
+          temperature: AppState.settings.temperature,
+          customPrompt: AppState.settings.customPrompt || '',
+        }),
       });
 
       if (!res.ok || !res.body) {
@@ -714,6 +752,7 @@
       let fullText = '';
       let gotError = '';
       let firstChunk = true;
+      let deltaCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -730,11 +769,16 @@
           try { obj = JSON.parse(jsonStr); } catch { continue; }
           if (obj.error && !fullText) { gotError = obj.error; continue; }
           if (obj.delta) {
+            deltaCount++;
             fullText += obj.delta;
             const idx = idxOf();
             if (idx !== -1) {
-              if (firstChunk) { chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: fullText, pending: false, streaming: true }; firstChunk = false; }
-              else { chat.messages[idx].text = fullText; }
+              if (firstChunk) {
+                chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: fullText, pending: false, streaming: true };
+                firstChunk = false;
+              } else {
+                chat.messages[idx].text = fullText;
+              }
               renderMessages();
             }
           }
@@ -744,8 +788,16 @@
       const idx = idxOf();
       if (idx !== -1) {
         if (fullText) {
-          chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: fullText };
-          if (AppState.settings.voiceAutoplay) speakText(fullText);
+          // Если пришло одним куском (не стримилось) — анимируем печать.
+          if (deltaCount <= 1 && fullText.length > 24) {
+            chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: '', streaming: true };
+            renderMessages();
+            await animateTyping(pendingMsg.id, fullText);
+            if (AppState.settings.voiceAutoplay) speakText(fullText);
+          } else {
+            chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: fullText };
+            if (AppState.settings.voiceAutoplay) speakText(fullText);
+          }
         } else {
           chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: gotError || window.t('error.generic'), error: true };
         }
@@ -851,15 +903,20 @@
   function openSettings() {
     el.settingsBackdrop.classList.add('is-open');
     el.settingsDialog.classList.add('is-open');
+    // Пересчитываем заливку ползунков — они должны правильно отрисоваться,
+    // даже если диалог был display:none.
+    requestAnimationFrame(refreshAllSliderFills);
   }
   function closeSettings() {
     el.settingsBackdrop.classList.remove('is-open');
     el.settingsDialog.classList.remove('is-open');
   }
 
-  function switchSettingsTab(tab) {
+  function switchSettingsTab(tab, btn) {
     $$('.dialog-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.tab === tab));
     $$('.settings-panel').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === tab));
+    if (btn && typeof btn.blur === 'function') btn.blur();
+    requestAnimationFrame(refreshAllSliderFills);
   }
 
   function populateModelSelect() {
@@ -901,7 +958,6 @@
       el.fileInput.value = '';
     });
 
-    // drag & drop onto composer
     el.chatScroll.addEventListener('dragover', (e) => e.preventDefault());
     el.chatScroll.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -916,7 +972,7 @@
       }
     });
     el.sendBtn.addEventListener('click', () => {
-      if (AppState.isStreaming) return; // stop not implemented for non-stream fetch
+      if (AppState.isStreaming) return;
       sendMessage();
     });
 
@@ -928,7 +984,7 @@
 
     el.settingsTabs.addEventListener('click', (e) => {
       const btn = e.target.closest('.dialog-tab');
-      if (btn) switchSettingsTab(btn.dataset.tab);
+      if (btn) switchSettingsTab(btn.dataset.tab, btn);
     });
 
     el.langSegmented.addEventListener('click', (e) => {
@@ -975,16 +1031,56 @@
       applySettingsToDOM();
     });
 
-    // --- extra settings ---
-    const bindSeg = (id, key) => { const n = document.getElementById(id); if (!n) return; n.addEventListener('click', (e) => { const b = e.target.closest('.segmented-btn'); if (!b) return; AppState.settings[key] = b.dataset.v; saveSettings(AppState.settings); applySettingsToDOM(); }); };
-    bindSeg('chatWidthSeg', 'chatWidth'); bindSeg('densitySeg', 'density'); bindSeg('fontFamilySeg', 'fontFamily');
-    const bindSw = (id, key) => { const n = document.getElementById(id); if (!n) return; n.addEventListener('click', () => { AppState.settings[key] = !AppState.settings[key]; saveSettings(AppState.settings); applySettingsToDOM(); }); };
-    bindSw('autoScrollSwitch', 'autoScroll'); bindSw('showHintSwitch', 'showHint'); bindSw('showAvatarsSwitch', 'showAvatars');
-    bindSw('showNamesSwitch', 'showNames'); bindSw('reduceMotionSwitch', 'reduceMotion'); bindSw('lottieSwitch', 'lottie');
+    const bindSeg = (id, key) => {
+      const n = document.getElementById(id);
+      if (!n) return;
+      n.addEventListener('click', (e) => {
+        const b = e.target.closest('.segmented-btn');
+        if (!b) return;
+        AppState.settings[key] = b.dataset.v;
+        saveSettings(AppState.settings);
+        applySettingsToDOM();
+      });
+    };
+    bindSeg('chatWidthSeg', 'chatWidth');
+    bindSeg('densitySeg', 'density');
+    bindSeg('fontFamilySeg', 'fontFamily');
+
+    const bindSw = (id, key) => {
+      const n = document.getElementById(id);
+      if (!n) return;
+      n.addEventListener('click', () => {
+        AppState.settings[key] = !AppState.settings[key];
+        saveSettings(AppState.settings);
+        applySettingsToDOM();
+      });
+    };
+    bindSw('autoScrollSwitch', 'autoScroll');
+    bindSw('showHintSwitch', 'showHint');
+    bindSw('showAvatarsSwitch', 'showAvatars');
+    bindSw('showNamesSwitch', 'showNames');
+    bindSw('reduceMotionSwitch', 'reduceMotion');
+    bindSw('lottieSwitch', 'lottie');
+
     const tr = document.getElementById('tempRange');
-    if (tr) tr.addEventListener('input', () => { AppState.settings.temperature = parseFloat(tr.value); document.getElementById('tempVal').textContent = Number(tr.value).toFixed(2).replace(/0$/, ''); saveSettings(AppState.settings); });
+    if (tr) {
+      updateSliderFill(tr);
+      tr.addEventListener('input', () => {
+        AppState.settings.temperature = parseFloat(tr.value);
+        document.getElementById('tempVal').textContent = Number(tr.value).toFixed(2).replace(/0$/, '');
+        updateSliderFill(tr);
+        saveSettings(AppState.settings);
+      });
+    }
+
     const cp = document.getElementById('customPrompt');
     if (cp) cp.addEventListener('input', () => { AppState.settings.customPrompt = cp.value.slice(0, 1500); saveSettings(AppState.settings); });
+
+    el.voiceRate.addEventListener('input', () => {
+      AppState.settings.voiceRate = parseFloat(el.voiceRate.value);
+      updateSliderFill(el.voiceRate);
+      saveSettings(AppState.settings);
+    });
 
     el.defaultModelSelect.addEventListener('change', () => {
       AppState.settings.defaultModel = el.defaultModelSelect.value;
@@ -993,11 +1089,6 @@
 
     el.voiceSelect.addEventListener('change', () => {
       AppState.settings.voiceURI = el.voiceSelect.value;
-      saveSettings(AppState.settings);
-    });
-
-    el.voiceRate.addEventListener('input', () => {
-      AppState.settings.voiceRate = parseFloat(el.voiceRate.value);
       saveSettings(AppState.settings);
     });
 
@@ -1029,6 +1120,10 @@
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
       if (AppState.settings.theme === 'system') applySettingsToDOM();
     });
+
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(refreshAllSliderFills);
+    });
   }
 
   // ============================================================
@@ -1049,6 +1144,8 @@
     if (window.innerWidth <= 900) {
       el.app.classList.add('sidebar-collapsed');
     }
+
+    refreshAllSliderFills();
   }
 
   document.addEventListener('DOMContentLoaded', init);
