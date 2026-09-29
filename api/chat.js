@@ -2,9 +2,8 @@
 // Стриминг ответа Gemini (SSE -> клиенту), ротация ключей APIKEY1..APIKEY5
 // при 429/5xx/сетевых сбоях, защита от пустых ответов.
 //
-// КРИТИЧНО: Vercel Edge убивает функцию по таймауту ~25с (Hobby).
-// Поэтому здесь есть ОБЩИЙ бюджет времени (BUDGET_MS) — если мы его
-// превышаем, отдаём понятную ошибку, вместо FUNCTION_INVOCATION_TIMEOUT.
+// ВАЖНО: Gemini отдаёт SSE с CRLF-разделителями (\r\n\r\n), а не LF (\n\n).
+// Поэтому после декодирования нормализуем \r\n -> \n, иначе события не режутся.
 
 export const config = { runtime: 'edge' };
 
@@ -165,8 +164,6 @@ export default async function handler(req) {
   outer:
   for (const mdl of modelsToTry) {
     for (let ki = 0; ki < order.length; ki++) {
-      // Не начинаем новую попытку, если до дедлайна осталось меньше
-      // PER_KEY_OPEN_TIMEOUT_MS — иначе Vercel убьёт нас раньше, чем мы ответим.
       const remain = deadline - Date.now();
       if (remain <= PER_KEY_OPEN_TIMEOUT_MS) {
         tried.push({ model: mdl, key: `#${ki + 1}`, result: 'skipped:time-budget' });
@@ -189,8 +186,6 @@ export default async function handler(req) {
           model: mdl, key: `#${ki + 1}`,
           result: isAbort ? 'timeout' : ('http:' + (status || 'network')),
         });
-        // Сеть/таймаут/429/5xx/403 → следующий ключ.
-        // 400/404 → у этого ключа модель недоступна, пробуем следующую модель.
         if (isAbort || !e || e.retry === undefined || e.retry) continue;
         break;
       }
@@ -210,19 +205,14 @@ export default async function handler(req) {
         if (d && d.error && d.error.message) msg = `Ошибка Gemini: ${d.error.message}`;
       } catch { /* detail — не JSON */ }
     }
-    // Диагностика в консоль Vercel — чтобы видеть, что реально было.
     console.error('[chat] all upstream attempts failed', { tried, lastStatus: status, elapsedMs: Date.now() - startedAt });
-    return sseError(msg + ' ' + `(попытки: ${tried.map(t => t.model + '@' + t.key + '=' + t.result).join(', ')})`);
+    return sseError(msg);
   }
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   let total = 0;
   let blocked = null;
-  // Локальный буфер для диагностики — накапливаем первые N символов
-  // сырого ответа от Gemini, чтобы потом залогировать, если ничего не распарсилось.
-  let rawPreview = '';
-  const RAW_PREVIEW_LIMIT = 4000;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -233,7 +223,6 @@ export default async function handler(req) {
       let buf = '';
       try {
         while (true) {
-          // Прерываем чтение стрима, если подходим к общему дедлайну.
           const remain = deadline - Date.now();
           if (remain <= 0) {
             send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
@@ -243,10 +232,10 @@ export default async function handler(req) {
           const { value, done } = await reader.read();
           if (done) break;
 
-          const decoded = dec.decode(value, { stream: true });
-          if (rawPreview.length < RAW_PREVIEW_LIMIT) {
-            rawPreview += decoded.slice(0, RAW_PREVIEW_LIMIT - rawPreview.length);
-          }
+          // КРИТИЧНО: Gemini присылает SSE с CRLF-разделителями (\r\n\r\n).
+          // Нормализуем \r\n -> \n, иначе разделитель событий "\n\n" не найдётся,
+          // и мы никогда не разрежем буфер на события.
+          const decoded = dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
           buf += decoded;
 
           let idx;
@@ -272,14 +261,7 @@ export default async function handler(req) {
         }
 
         if (total === 0 && !blocked) {
-          // Диагностика: логируем то, что реально пришло от Gemini.
-          console.error('[chat] empty-response debug', {
-            rawPreview: rawPreview.slice(0, 4000),
-            rawPreviewLen: rawPreview.length,
-            remainingBuf: buf.slice(0, 1000),
-            tried,
-            elapsedMs: Date.now() - startedAt,
-          });
+          console.error('[chat] empty-response', { tried, elapsedMs: Date.now() - startedAt });
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
         } else if (total === 0 && blocked) {
           send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
