@@ -937,3 +937,26 @@ select, textarea { scrollbar-width: thin; }
 }
 :root[data-motion="reduce"] .bg-base, :root[data-motion="reduce"] .bg-shine { animation: none !important; }
 :root[data-lottie="off"] .empty-lottie { display: none; }
+
+/* ===== ОСТАНОВЛЕННОЕ СООБЩЕНИЕ ===== */
+.msg.is-stopped .msg-content::after {
+  content: "";
+}
+.msg-stopped {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .72rem;
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+  margin-top: 4px;
+  opacity: .8;
+  user-select: none;
+}
+.msg-stopped::before {
+  content: "stop_circle";
+  font-family: "Material Symbols Rounded";
+  font-size: 13px;
+  font-variation-settings: 'opsz' 20, 'wght' 400, 'FILL' 0;
+  opacity: .75;
+}
