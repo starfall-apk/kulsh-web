@@ -76,8 +76,12 @@
     settings: loadSettings(),
     pendingAttachments: [],
     isStreaming: false,
+    stoppedByUser: false,
   };
   window.AppState = AppState;
+
+  // Активный AbortController текущего запроса — нужен кнопке «стоп».
+  let currentAbort = null;
 
   function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
@@ -200,7 +204,6 @@
     const tr = document.getElementById('tempRange'); if (tr) { tr.value = S.temperature; document.getElementById('tempVal').textContent = Number(S.temperature).toFixed(2).replace(/0$/, ''); }
     const cp = document.getElementById('customPrompt'); if (cp && document.activeElement !== cp) cp.value = S.customPrompt || '';
 
-    // settings dialog controls
     $$('#langSegmented .segmented-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.lang === AppState.settings.lang));
     $$('#themeSegmented .segmented-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.theme === AppState.settings.theme));
     $$('#fontSizeSegmented .segmented-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.size === AppState.settings.fontSize));
@@ -474,7 +477,10 @@
   function patchMessageNode(node, m) {
     const content = node.querySelector('.msg-content');
     if (!content) return;
-    node.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant') + (m.streaming ? ' is-streaming' : '');
+    node.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant')
+      + (m.streaming ? ' is-streaming' : '')
+      + (m.stopped ? ' is-stopped' : '');
+
     if (m.pending) {
       content.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
     } else if (m.error) {
@@ -483,6 +489,7 @@
     } else {
       content.innerHTML = renderMarkdown(m.text);
     }
+
     if (!m.pending && !m.streaming && !node.querySelector('.msg-actions')) {
       const fresh = buildMessageNode(m);
       fresh.style.animation = 'none';
@@ -504,7 +511,9 @@
 
   function buildMessageNode(m) {
     const wrap = document.createElement('div');
-    wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant') + (m.streaming ? ' is-streaming' : '');
+    wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant')
+      + (m.streaming ? ' is-streaming' : '')
+      + (m.stopped ? ' is-stopped' : '');
     wrap.dataset.id = m.id;
 
     const avatar = document.createElement('div');
@@ -551,6 +560,14 @@
       content.innerHTML = renderMarkdown(m.text);
     }
     body.appendChild(content);
+
+    // Пометка «остановлено» — маленькая, серым, под контентом.
+    if (m.stopped) {
+      const stopped = document.createElement('div');
+      stopped.className = 'msg-stopped';
+      stopped.textContent = window.t('chat.stopped');
+      body.appendChild(stopped);
+    }
 
     if (!m.pending) {
       const actions = document.createElement('div');
@@ -659,6 +676,20 @@
       ? '<span class="material-symbols-rounded">stop</span>'
       : '<span class="material-symbols-rounded">arrow_upward</span>';
     el.sendBtn.classList.toggle('is-stop', isSending);
+    el.sendBtn.setAttribute('aria-label', isSending ? window.t('composer.stop') : window.t('composer.send'));
+  }
+
+  // Полная остановка текущего запроса и/или fallback-анимации печати.
+  function stopStreaming() {
+    AppState.stoppedByUser = true;
+    if (currentAbort) {
+      try { currentAbort.abort(); } catch {}
+      currentAbort = null;
+    }
+    // Флаг isStreaming сбрасываем сразу — это заставит и цикл animateTyping,
+    // и UI моментально вернуться в нормальное состояние.
+    AppState.isStreaming = false;
+    setSendingState(false);
   }
 
   async function sendMessage() {
@@ -693,6 +724,8 @@
     await requestAssistantReply(chat);
   }
 
+  // Fallback: если стриминг не пришёл (одним куском), анимируем печать посимвольно.
+  // Уважает флаг AppState.isStreaming — прерывается, если пользователь нажал «стоп».
   async function animateTyping(msgId, fullText) {
     const chat = getActiveChat();
     if (!chat) return;
@@ -706,6 +739,10 @@
     const chunk = Math.max(1, Math.ceil(total / Math.max(1, Math.floor(duration / stepMs))));
 
     for (let i = 0; i < total; i += chunk) {
+      if (!AppState.isStreaming) {
+        // Пользователь остановил — оставляем уже набранный префикс.
+        return;
+      }
       const end = Math.min(total, i + chunk);
       chat.messages[idx].text = fullText.slice(0, end);
       renderMessages();
@@ -721,7 +758,15 @@
     renderMessages();
     setSendingState(true);
 
+    const abort = new AbortController();
+    currentAbort = abort;
+    AppState.stoppedByUser = false;
+
     const idxOf = () => chat.messages.findIndex((m) => m.id === pendingMsg.id);
+    let fullText = '';
+    let gotError = '';
+    let firstChunk = true;
+    let deltaCount = 0;
 
     try {
       const payloadMessages = chat.messages
@@ -731,6 +776,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: abort.signal,
         body: JSON.stringify({
           messages: payloadMessages,
           model: chat.model,
@@ -743,16 +789,13 @@
         const idx = idxOf();
         if (idx !== -1) chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: window.t('error.generic'), error: true };
         saveChats(AppState.chats); renderMessages(); setSendingState(false);
+        currentAbort = null;
         return;
       }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let fullText = '';
-      let gotError = '';
-      let firstChunk = true;
-      let deltaCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -784,27 +827,46 @@
           }
         }
       }
-
-      const idx = idxOf();
-      if (idx !== -1) {
-        if (fullText) {
-          // Если пришло одним куском (не стримилось) — анимируем печать.
-          if (deltaCount <= 1 && fullText.length > 24) {
-            chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: '', streaming: true };
-            renderMessages();
-            await animateTyping(pendingMsg.id, fullText);
-            if (AppState.settings.voiceAutoplay) speakText(fullText);
-          } else {
-            chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: fullText };
-            if (AppState.settings.voiceAutoplay) speakText(fullText);
-          }
-        } else {
-          chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: gotError || window.t('error.generic'), error: true };
-        }
-      }
     } catch (e) {
-      const idx = idxOf();
-      if (idx !== -1) chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: window.t('error.generic'), error: true };
+      // AbortError при нажатии «стоп» — это НЕ ошибка, обрабатываем как нормальную остановку.
+      if (!(e && e.name === 'AbortError')) {
+        console.error('[chat] request failed', e);
+      }
+    }
+
+    currentAbort = null;
+
+    // ---- Финализация сообщения ----
+    const idx = idxOf();
+    if (idx !== -1) {
+      if (fullText) {
+        // Если стрим не сработал (всё одним куском) — анимируем печать.
+        // Но только если пользователь ещё не нажал «стоп».
+        if (deltaCount <= 1 && fullText.length > 24 && !AppState.stoppedByUser) {
+          chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: '', streaming: true };
+          renderMessages();
+          await animateTyping(pendingMsg.id, fullText);
+        }
+
+        const idx2 = idxOf();
+        if (idx2 !== -1) {
+          const cur = chat.messages[idx2] || {};
+          // cur.text — то, что успело набраться (может быть префиксом, если остановили).
+          const finalText = cur.text || fullText;
+          chat.messages[idx2] = {
+            id: pendingMsg.id,
+            role: 'assistant',
+            text: finalText,
+            stopped: !!AppState.stoppedByUser,
+          };
+          if (AppState.settings.voiceAutoplay && !AppState.stoppedByUser) speakText(finalText);
+        }
+      } else if (AppState.stoppedByUser) {
+        // Ничего не успело прийти и пользователь остановил — удаляем пустой пузырь.
+        chat.messages.splice(idx, 1);
+      } else {
+        chat.messages[idx] = { id: pendingMsg.id, role: 'assistant', text: gotError || window.t('error.generic'), error: true };
+      }
     }
 
     saveChats(AppState.chats);
@@ -903,8 +965,6 @@
   function openSettings() {
     el.settingsBackdrop.classList.add('is-open');
     el.settingsDialog.classList.add('is-open');
-    // Пересчитываем заливку ползунков — они должны правильно отрисоваться,
-    // даже если диалог был display:none.
     requestAnimationFrame(refreshAllSliderFills);
   }
   function closeSettings() {
@@ -968,12 +1028,18 @@
     el.composerInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && AppState.settings.sendOnEnter) {
         e.preventDefault();
-        sendMessage();
+        // Во время стриминга Enter ничего не должен делать — только кнопка «стоп».
+        if (!AppState.isStreaming) sendMessage();
       }
     });
+
+    // Кнопка отправки/остановки: два разных действия в зависимости от состояния.
     el.sendBtn.addEventListener('click', () => {
-      if (AppState.isStreaming) return;
-      sendMessage();
+      if (AppState.isStreaming) {
+        stopStreaming();
+      } else {
+        sendMessage();
+      }
     });
 
     el.micBtn.addEventListener('click', toggleListening);
