@@ -219,6 +219,10 @@ export default async function handler(req) {
   const dec = new TextDecoder();
   let total = 0;
   let blocked = null;
+  // Локальный буфер для диагностики — накапливаем первые N символов
+  // сырого ответа от Gemini, чтобы потом залогировать, если ничего не распарсилось.
+  let rawPreview = '';
+  const RAW_PREVIEW_LIMIT = 4000;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -238,7 +242,13 @@ export default async function handler(req) {
 
           const { value, done } = await reader.read();
           if (done) break;
-          buf += dec.decode(value, { stream: true });
+
+          const decoded = dec.decode(value, { stream: true });
+          if (rawPreview.length < RAW_PREVIEW_LIMIT) {
+            rawPreview += decoded.slice(0, RAW_PREVIEW_LIMIT - rawPreview.length);
+          }
+          buf += decoded;
+
           let idx;
           while ((idx = buf.indexOf('\n\n')) !== -1) {
             const chunk = buf.slice(0, idx);
@@ -260,7 +270,16 @@ export default async function handler(req) {
             }
           }
         }
+
         if (total === 0 && !blocked) {
+          // Диагностика: логируем то, что реально пришло от Gemini.
+          console.error('[chat] empty-response debug', {
+            rawPreview: rawPreview.slice(0, 4000),
+            rawPreviewLen: rawPreview.length,
+            remainingBuf: buf.slice(0, 1000),
+            tried,
+            elapsedMs: Date.now() - startedAt,
+          });
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
         } else if (total === 0 && blocked) {
           send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
