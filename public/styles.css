@@ -70,8 +70,8 @@
   --font-display: "Google Sans Flex Round", "Roboto Flex", system-ui, sans-serif;
   --font-body: "Google Sans Flex", "Roboto Flex", system-ui, sans-serif;
   --font-mono: "Google Sans Code", "Roboto Mono", ui-monospace, "SF Mono", Consolas, monospace;
-  /* Стек для Material Symbols: сначала локальное подмножество, потом полный шрифт из Google. */
-  --font-icons: "Material Symbols Rounded Local", "Material Symbols Rounded";
+  /* Стек для Material Symbols: сначала Google (все лигатуры), потом локальный subset. */
+  --font-icons: "Material Symbols Rounded", "Material Symbols Rounded Local";
 
   --chat-font-size: 16px;
 
@@ -706,26 +706,34 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
 }
 .composer-input::placeholder { color: var(--md-on-surface-variant); }
 
-/* Кнопка отправки. ВАЖНО: правило идёт через #sendBtn (специфичность 1,0,0),
-   потому что у кнопки два класса — .icon-btn и .composer-send. В auth.css
-   (.icon-btn { background: none; color: on-surface-variant }) идёт ПОСЛЕ
-   styles.css, при равной специфичности (0,1,0) перебивает цвет и фон.
-   ID-селектор выигрывает у любых классов, поэтому кнопка снова фиолетовая.
-   На hover стрелка становится светлой (--md-on-surface, почти белая) —
-   транзишена на color нет, поэтому смена мгновенная, как в оригинале. */
+/* ==========================================================================
+   Кнопка отправки.
+   Селектор через #sendBtn (специфичность 1,0,0): у кнопки два класса —
+   .icon-btn и .composer-send, а .icon-btn в auth.css подключён ПОЗЖЕ
+   styles.css и при равной специфичности (0,1,0) перебивал фон и цвет.
+
+   Стрелка: цвет = var(--md-on-primary). Он не меняется ни на hover,
+   ни на active — в тёмной теме это тёмно-фиолетовый (#2A0F5C), в светлой
+   белый (#FFFFFF). В transition для color ничего нет, поэтому при смене
+   темы стрелка меняет цвет мгновенно.
+
+   Фон на hover разный по темам:
+     • тёмная (по умолчанию) — уходим в тёмное: --md-primary смешиваем
+       с чёрным. Вид «темнее и насыщеннее» — пастельно-сиреневый #B98CFF
+       превращается в глубокий фиолетовый.
+     • светлая — наоборот, уходим в светлое: смешиваем с белым.
+   ========================================================================== */
 #sendBtn {
   background: var(--md-primary);
   color: var(--md-on-primary);
   transition: background var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
-#sendBtn:hover {
-  background: color-mix(in srgb, var(--md-primary) 88%, black);
-  color: var(--md-on-surface);
-}
-#sendBtn:active {
-  background: color-mix(in srgb, var(--md-primary) 78%, black);
-  color: var(--md-on-surface);
-}
+#sendBtn:hover  { background: color-mix(in srgb, var(--md-primary) 80%, black); }
+#sendBtn:active { background: color-mix(in srgb, var(--md-primary) 68%, black); }
+
+:root[data-theme="light"] #sendBtn:hover  { background: color-mix(in srgb, var(--md-primary) 78%, white); }
+:root[data-theme="light"] #sendBtn:active { background: color-mix(in srgb, var(--md-primary) 62%, white); }
+
 #sendBtn.is-stop,
 #sendBtn.is-stop:hover,
 #sendBtn.is-stop:active {
@@ -861,7 +869,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
 }
 /* Fixed white check with drop-shadow — видно на любом цвете свотча,
    никакого mix-blend-mode: difference (который давал рандомные цвета).
-   font-family — стек иконок: локальное подмножество, потом Google-фолбэк. */
+   font-family — стек иконок: Google первым, локальный subset вторым. */
 .swatch.is-active::after {
   content: "check";
   font-family: var(--font-icons);
