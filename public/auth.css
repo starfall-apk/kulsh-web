@@ -1,4 +1,19 @@
 /* auth.css — диалоги входа и согласия (общий для чата и донатов) */
+
+/* Базовый icon-btn — используется и в шапке, и в диалогах.
+   Раньше класс был определён только через `.donate-header .icon-btn`,
+   поэтому в auth-диалоге на странице донатов кнопка закрытия выглядела иначе. */
+.icon-btn {
+  width: 40px; height: 40px; border-radius: var(--r-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--md-on-surface-variant);
+  background: none; border: none; padding: 0;
+  cursor: pointer; flex-shrink: 0;
+  transition: background var(--dur-s) var(--ease-standard), color var(--dur-s);
+}
+.icon-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--md-on-surface); }
+.icon-btn:active { background: color-mix(in srgb, var(--md-on-surface) 14%, transparent); }
+
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 20px; border-radius: var(--r-full);
@@ -40,7 +55,7 @@
 .auth-glow { position: absolute; inset: -80px -40px auto; height: 220px; pointer-events: none; z-index: 0;
   background: radial-gradient(60% 70% at 50% 0%, color-mix(in srgb, var(--md-primary) 32%, transparent), transparent 70%); }
 .auth-dialog > *:not(.auth-glow) { position: relative; z-index: 1; }
-.auth-dialog > .auth-close { position: absolute; top: 10px; right: 10px; z-index: 5; }
+.auth-dialog > .auth-close { position: absolute; top: 8px; right: 8px; z-index: 5; }
 .auth-close svg { display: block; pointer-events: none; }
 .auth-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding-top: 6px; }
 .auth-hero h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 650; margin: 8px 0 0; }
@@ -70,10 +85,17 @@
 .auth-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: .78rem; background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
 .auth-chip svg { width: 16px; height: 16px; }
 .auth-logout { width: 100%; }
-.account-btn .account-ic { display: inline-flex; color: var(--md-on-surface-variant); }
+
+.account-btn { display: inline-flex; align-items: center; gap: 12px; }
 .account-btn:hover .account-ic { color: var(--md-primary); }
+.account-ic { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--md-on-surface-variant); flex-shrink: 0; }
+.account-ic svg { width: 24px; height: 24px; display: block; }
 .account-av { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; font-size: .75rem; }
 .account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Кнопка-аккаунт в сайдбаре: выравнивание по соседним «Поддержать» и «Настройки» */
+.sidebar-user.account-btn { gap: 12px; }
+.sidebar-user.account-btn .account-ic { width: 24px; height: 24px; }
 
 /* Гость: ограничения интерфейса */
 .model-option.is-locked { opacity: .55; }
@@ -84,11 +106,27 @@
 :root[data-guest="on"] #tempRange,
 :root[data-guest="on"] #customPrompt { pointer-events: none; opacity: .45; }
 
+/* Раздел «Усилие» в меню выбора модели */
+.model-menu-section {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px 6px;
+  font-size: .72rem; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--md-on-surface-variant);
+  opacity: .9;
+}
+.model-menu-section::after {
+  content: ''; flex: 1; height: 1px;
+  background: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+}
+
 /* donate / standalone header */
-.account-btn { display: inline-flex; align-items: center; gap: 8px; }
 .donate-header .account-btn { margin-left: auto; height: 40px; padding: 0 12px 0 8px; border-radius: 999px; font-size: .85rem; font-weight: 500; color: var(--md-on-surface); max-width: 180px; }
 .donate-header .account-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
 .donate-header .account-btn + .brand { margin-left: 0; }
+.donate-header .account-btn .account-ic { width: 20px; height: 20px; }
+.donate-header .account-btn .account-ic svg { width: 20px; height: 20px; }
+
 /* consent */
 .consent-dialog { width: min(440px, 92vw); padding: 30px 26px 24px; gap: 14px; align-items: center; text-align: center; overflow: hidden auto; }
 .consent-dialog > * { position: relative; z-index: 1; }
