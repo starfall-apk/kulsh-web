@@ -300,6 +300,7 @@ select, textarea { scrollbar-width: thin; }
   padding: 10px 14px; border-radius: var(--r-full);
   color: var(--md-on-surface); font-size: .875rem;
   text-decoration: none;
+  transition: background var(--dur-s) var(--ease-standard);
 }
 .sidebar-user:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
 .sidebar-user .material-symbols-rounded { font-size: 20px; color: var(--md-on-surface-variant); }
@@ -1200,4 +1201,3 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
   .error-mascot { width: 44px; height: 52px; }
   .todo { --todo-pad: 12px; }
 }
-
