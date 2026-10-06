@@ -732,10 +732,10 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
   transition: filter var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
 #sendBtn:hover  { filter: brightness(0.9) saturate(1.3); }
-#sendBtn:active { filter: brightness(0.76) saturate(1.46); }
+#sendBtn:active { filter: brightness(0.67) saturate(1.55); }
 
 :root[data-theme="light"] #sendBtn:hover  { filter: brightness(1.12); }
-:root[data-theme="light"] #sendBtn:active { filter: brightness(1.32); }
+:root[data-theme="light"] #sendBtn:active { filter: brightness(1.66); }
 
 /* Состояние «стоп» (красная кнопка) — никакого фильтра, чистый --md-error. */
 #sendBtn.is-stop,
