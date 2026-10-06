@@ -3,10 +3,12 @@
    в стеке стоят Roboto Flex / Roboto Mono (кириллические подмножества).
 
    Material Symbols Rounded: локальный файл — это собранное подмножество только тех иконок,
-   которые реально используются в интерфейсе. Если добавляется новая иконка (balance,
-   psychology, download и т.п.), которой в подмножестве нет — браузер берёт глиф из
-   полного шрифта, подключённого ниже через @import. Он же подтягивает обновления,
-   когда Google добавляет новые иконки. */
+   которые реально используются в интерфейсе. Полный шрифт подтягивается из Google Fonts
+   как fallback: если глифа нет в локальном файле (balance, psychology, download и т.п.),
+   браузер возьмёт его из Google. Для этого локальный @font-face объявлен под ДРУГИМ
+   именем ("Material Symbols Rounded Local"): два @font-face с одинаковым family-name
+   перекрывают друг друга, и поздний (локальный) всегда выигрывал бы у Google. Теперь
+   в font-family перечислены оба — Local первым, Google вторым. */
 
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block");
 
@@ -48,10 +50,16 @@
   unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 
-/* Иконки: локальное подмножество (см. выше). Google-шрифт из @import — это тот же
-   family name, и браузер дотягивает из него глифы, которых нет в локальном файле. */
+/* Иконки: локальное подмножество первым, полный Google-шрифт — вторым в стеке.
+   Font-family fallback в CSS работает по глифам: знакомые иконки берутся из
+   локального быстрого файла, отсутствующие — дотягиваются из Google. */
+@font-face {
+  font-family: "Material Symbols Rounded Local";
+  font-style: normal; font-weight: 300 600; font-display: block;
+  src: url("material-symbols-rounded.woff2") format("woff2");
+}
 .material-symbols-rounded {
-  font-family: "Material Symbols Rounded";
+  font-family: "Material Symbols Rounded Local", "Material Symbols Rounded";
   font-weight: normal; font-style: normal; font-size: 24px; line-height: 1;
   letter-spacing: normal; text-transform: none; display: inline-block;
   white-space: nowrap; word-wrap: normal; direction: ltr;
