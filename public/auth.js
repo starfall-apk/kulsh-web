@@ -38,7 +38,6 @@
     github: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>',
     telegram: '<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="11" fill="#29A9EB"/><path fill="#fff" d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.8-2.1-1.4 1.3c-.1.2-.3.3-.6.3l.2-2.9 5.2-4.7c.2-.2 0-.3-.3-.1l-6.4 4-2.8-.9c-.6-.2-.6-.6.1-.9z"/></svg>',
     lock: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm-3 8V6a3 3 0 1 1 6 0v3H9z"/></svg>',
-    user: '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg>',
     close: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
     check: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
   };
@@ -88,6 +87,8 @@
     if (!settings && !slot) return;
     accountBtn = document.createElement('button');
     accountBtn.type = 'button';
+    // Если ставим рядом с «Поддержать» и «Настройки» — берём тот же класс .sidebar-user,
+    // чтобы padding / gap / font-size / высота были идентичны соседям.
     accountBtn.className = (settings ? 'sidebar-user ' : '') + 'account-btn';
     accountBtn.id = 'accountBtn';
     accountBtn.addEventListener('click', () => open());
@@ -102,9 +103,11 @@
   function renderAccountBtn() {
     if (!accountBtn) return;
     const s = tr();
+    // Иконку гостя рисуем тем же шрифтом Material Symbols Rounded, что и соседние
+    // кнопки «Поддержать» / «Настройки» — размер и вертикальное выравнивание совпадают.
     accountBtn.innerHTML = A.user
       ? `${avatarHTML(A.user, 'account-av')}<span class="account-name">${esc(A.user.name)}</span>`
-      : `<span class="account-ic">${ICON.user}</span><span>${s.login}</span>`;
+      : `<span class="material-symbols-rounded">person</span><span>${s.login}</span>`;
     document.documentElement.dataset.guest = A.user ? 'off' : 'on';
   }
 
@@ -188,16 +191,14 @@
   function hideConsent() { cBackdrop.classList.remove('is-open'); cDlg.classList.remove('is-open'); }
   function maybeConsent() { if (!hasConsent() && !location.pathname.startsWith('/privacy')) askConsent(); }
 
-  // Мгновенный рендер из кэша — кнопка появляется сразу, без ожидания /api/auth/me.
-  // Дальше ready уточнит данные с сервера и, если что-то поменялось, перерисует.
+  // Мгновенный рендер из кэша — кнопка появляется сразу, не дожидаясь /api/auth/me.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', renderAccountBtn);
   } else {
-    // DOM уже готов — на всякий случай вызовем с небольшим отложенным тиком.
     setTimeout(renderAccountBtn, 0);
   }
 
-  // Смена языка — сразу перерисовываем кнопку и, если открыт диалог, сам диалог.
+  // Смена языка — сразу перерисовываем кнопку и открытый диалог.
   window.addEventListener('kulsh-lang-change', () => {
     renderAccountBtn();
     if (dlg.classList.contains('is-open')) render();
