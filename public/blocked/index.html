@@ -8,7 +8,15 @@
 <meta name="color-scheme" content="dark light" />
 <meta name="robots" content="noindex, nofollow" />
 <link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts.css" />
 <link rel="stylesheet" href="/errors.css" />
+
 <script>
   try {
     var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
@@ -20,36 +28,76 @@
 </script>
 </head>
 <body>
-  <div class="lang-switch" id="langSwitch">
-    <button type="button" data-lang="ru">RU</button>
-    <button type="button" data-lang="en">EN</button>
-  </div>
 
-  <div class="card">
-    <img class="logo" src="/assets/logo.png" alt="KulshGPT" />
-    <div class="code" id="codeLabel">Доступ ограничен</div>
-    <h1 id="title">Недоступно в вашем регионе</h1>
-    <p id="sub">Сервис временно ограничивает доступ для пользователей из вашего региона.</p>
-    <p id="why">Ограничение связано с действующим законодательством Российской Федерации, регулирующим оказание цифровых услуг пользователям из отдельных юрисдикций.</p>
-    <div class="note" id="note">Если вы находитесь в Крыму, Севастополе, Херсонской, Запорожской области, ЛНР или ДНР и видите это сообщение — сработала неточность IP-геолокации. Мы знаем об этой проблеме и постепенно улучшаем определение региона.</div>
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer">
+    <div class="bg-base"></div>
+    <div class="bg-shine"></div>
   </div>
+  <div class="bg-vignette"></div>
+</div>
 
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="KulshGPT">
+      <img src="/assets/logo.png" alt="KulshGPT" />
+      <span>KulshGPT</span>
+    </a>
+    <span class="spacer"></span>
+    <div class="lang-switch" id="langSwitch">
+      <button type="button" data-lang="ru">RU</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="card" role="dialog" aria-labelledby="pageTitle">
+      <div class="card-glow"></div>
+      <div class="card-body">
+        <div class="lottie is-empty" id="lottie" aria-hidden="true"></div>
+
+        <span class="code-badge"><span class="dot"></span><span id="badgeLabel">Доступ ограничен</span></span>
+        <h1 id="pageTitle">Увы, но Кульш недоступен в вашем регионе</h1>
+        <p class="lead" id="pageSub">К сожалению, сейчас мы не можем открыть сервис для тебя. Если считаешь, что это ошибка — напиши автору, мы разберёмся.</p>
+
+        <div class="actions">
+          <a class="btn btn-filled" href="https://t.me/lolfall" target="_blank" rel="noopener noreferrer" id="btnContact">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="11" fill="#29A9EB"/><path fill="#fff" d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.8-2.1-1.4 1.3c-.1.2-.3.3-.6.3l.2-2.9 5.2-4.7c.2-.2 0-.3-.3-.1l-6.4 4-2.8-.9c-.6-.2-.6-.6.1-.9z"/></svg>
+            <span id="btnContactLabel">Написать автору</span>
+          </a>
+          <a class="btn btn-tonal" href="https://github.com/starfall-apk/kulsh" target="_blank" rel="noopener noreferrer" id="btnSource">
+            <span class="material-symbols-rounded">code</span>
+            <span id="btnSourceLabel">Исходный код</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>© 2026 KulshGPT</span>
+    <span class="divider">·</span>
+    <a href="https://t.me/lolfall" target="_blank" rel="noopener noreferrer">Telegram автора</a>
+  </footer>
+</div>
+
+<script src="/lottie.min.js"></script>
 <script>
 (function () {
   var T = {
     ru: {
-      code: 'Доступ ограничен',
-      title: 'Недоступно в вашем регионе',
-      sub: 'Сервис временно ограничивает доступ для пользователей из вашего региона.',
-      why: 'Ограничение связано с действующим законодательством Российской Федерации, регулирующим оказание цифровых услуг пользователям из отдельных юрисдикций.',
-      note: 'Если вы находитесь в Крыму, Севастополе, Херсонской, Запорожской области, ЛНР или ДНР и видите это сообщение — сработала неточность IP-геолокации. Мы знаем об этой проблеме и постепенно улучшаем определение региона.',
+      badge: 'Доступ ограничен',
+      title: 'Увы, но Кульш недоступен в вашем регионе',
+      sub: 'К сожалению, сейчас мы не можем открыть сервис для тебя. Если считаешь, что это ошибка — напиши автору, мы разберёмся.',
+      contact: 'Написать автору',
+      source: 'Исходный код',
     },
     en: {
-      code: 'Access restricted',
-      title: 'Unavailable in your region',
-      sub: 'The service is temporarily unavailable to users from your region.',
-      why: 'The restriction is due to the current legislation of the Russian Federation regulating the provision of digital services to users from certain jurisdictions.',
-      note: "If you're in Crimea, Sevastopol, Kherson, Zaporozhye, LPR or DPR and see this message, it's due to an IP geolocation inaccuracy. We're aware of the issue and are improving region detection.",
+      badge: 'Access restricted',
+      title: "Unfortunately, Kulsh isn't available in your region",
+      sub: "Right now we can't open the service for you. If you think this is a mistake, ping the author — we'll look into it.",
+      contact: 'Contact author',
+      source: 'Source code',
     },
   };
   function lang() {
@@ -61,11 +109,11 @@
   function apply() {
     var l = lang(), t = T[l];
     document.documentElement.lang = l;
-    document.getElementById('codeLabel').textContent = t.code;
-    document.getElementById('title').textContent = t.title;
-    document.getElementById('sub').textContent = t.sub;
-    document.getElementById('why').textContent = t.why;
-    document.getElementById('note').textContent = t.note;
+    document.getElementById('badgeLabel').textContent = t.badge;
+    document.getElementById('pageTitle').textContent = t.title;
+    document.getElementById('pageSub').textContent = t.sub;
+    document.getElementById('btnContactLabel').textContent = t.contact;
+    document.getElementById('btnSourceLabel').textContent = t.source;
     Array.prototype.forEach.call(document.querySelectorAll('#langSwitch button'), function (b) {
       b.classList.toggle('is-active', b.dataset.lang === l);
     });
@@ -80,6 +128,20 @@
     apply();
   });
   apply();
+
+  window.addEventListener('DOMContentLoaded', function () {
+    var host = document.getElementById('lottie');
+    if (window.lottie && host) {
+      host.classList.remove('is-empty');
+      window.lottie.loadAnimation({
+        container: host,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: '/lotties/freedom.json',
+      });
+    }
+  });
 })();
 </script>
 </body>
