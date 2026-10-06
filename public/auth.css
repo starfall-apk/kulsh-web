@@ -1,8 +1,6 @@
 /* auth.css — диалоги входа и согласия (общий для чата и донатов) */
 
-/* Базовый icon-btn: используется и в шапке, и в диалогах.
-   Раньше класс был определён только через `.donate-header .icon-btn`,
-   поэтому в auth-диалоге на странице донатов крестик выглядел иначе. */
+/* Базовый icon-btn: используется и в шапке, и в диалогах. */
 .icon-btn {
   width: 40px; height: 40px; border-radius: var(--r-full);
   display: inline-flex; align-items: center; justify-content: center;
@@ -86,18 +84,74 @@
 .auth-chip svg { width: 16px; height: 16px; }
 .auth-logout { width: 100%; }
 
-/* Кнопка аккаунта в сайдбаре намеренно НЕ переопределяет gap / padding / display —
-   эти свойства наследуются от .sidebar-user, чтобы «Войти», «Поддержать» и
-   «Настройки» были абсолютно одинаковыми по размеру и отступам. */
-
-.account-av {
-  width: 24px; height: 24px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  font-size: .75rem; /* для fallback-буквы, если аватар не загрузился */
+/* =========================================================================
+   Кнопка аккаунта в сайдбаре.
+   Явно задаём ВСЕ свойства, влияющие на размер/отступы, и оборачиваем
+   иконку и аватар в один и тот же слот .acc-slot фиксированного размера.
+   Так «Войти», «Поддержать» и «Настройки» выглядят идентично при любом
+   порядке подключения CSS-файлов и в обоих состояниях (гость/авторизован).
+   ========================================================================= */
+.sidebar-user.account-btn {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  width: 100%;
+  margin: 0;
+  padding: inherit;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.account-name {
+/* Слот под иконку/аватар — ровно 24×24, как font-size у material-symbols-rounded */
+.sidebar-user.account-btn .acc-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.sidebar-user.account-btn .acc-slot .material-symbols-rounded {
+  display: block;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sidebar-user.account-btn .acc-slot .account-av,
+.sidebar-user.account-btn .acc-slot .av-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.sidebar-user.account-btn .acc-slot .av-fallback {
+  background: var(--md-primary-container, #3D2470);
+  color: var(--md-on-primary-container, #E4D3FF);
+}
+
+.sidebar-user.account-btn .account-name {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -139,7 +193,19 @@
 .donate-header .account-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
 .donate-header .account-btn + .brand { margin-left: auto; }
 .donate-header .account-btn .material-symbols-rounded { font-size: 20px; }
-.donate-header .account-btn .account-av { width: 24px; height: 24px; }
+.donate-header .account-btn .acc-slot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; flex: 0 0 24px; line-height: 1;
+}
+.donate-header .account-btn .acc-slot .account-av,
+.donate-header .account-btn .acc-slot .av-fallback {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+.donate-header .account-btn .account-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* consent */
 .consent-dialog { width: min(440px, 92vw); padding: 30px 26px 24px; gap: 14px; align-items: center; text-align: center; overflow: hidden auto; }
