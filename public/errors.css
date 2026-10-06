@@ -1,0 +1,161 @@
+/* errors.css — общие стили для страниц 404 / 503 / "недоступно в регионе".
+   Не тянем локальные шрифты: страница должна выглядеть нормально,
+   даже если основные ассеты недоступны. */
+
+:root {
+  --bg: #141019;
+  --surface: #201b29;
+  --surface-2: #2b2434;
+  --on-surface: #ECE6F5;
+  --on-surface-variant: #B0A8C0;
+  --primary: #B98CFF;
+  --on-primary: #2A0F5C;
+  --danger: #FFB4AB;
+  --danger-bg: #5c1e18;
+  --outline: #322b3d;
+  --shadow: rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #FCF8FF;
+  --surface: #F0EAF6;
+  --surface-2: #EAE3F2;
+  --on-surface: #1D1A22;
+  --on-surface-variant: #4B4557;
+  --primary: #7A3FE0;
+  --on-primary: #FFFFFF;
+  --danger: #B3261E;
+  --danger-bg: #F9DEDC;
+  --outline: #CCC3D9;
+  --shadow: rgba(60,40,90,.16);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  min-height: 100dvh;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  line-height: 1.5;
+}
+
+.card {
+  max-width: 540px;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 28px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 24px 60px var(--shadow);
+}
+
+.logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin: 0 auto 16px;
+  display: block;
+}
+
+.code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: .82rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--primary);
+  opacity: .9;
+  margin-bottom: 6px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+
+p {
+  color: var(--on-surface-variant);
+  font-size: .95rem;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+.note {
+  font-size: .82rem;
+  color: var(--on-surface-variant);
+  opacity: .85;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: 14px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: .92rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: transform .15s cubic-bezier(.2,0,0,1), background .15s, box-shadow .15s;
+}
+
+.btn-filled { background: var(--primary); color: var(--on-primary); }
+.btn-filled:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 30%, transparent); }
+.btn-tonal { background: var(--surface-2); color: var(--on-surface); }
+.btn-tonal:hover { background: color-mix(in srgb, var(--surface-2) 78%, var(--on-surface)); }
+
+.lang-switch {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 999px;
+  padding: 4px;
+  font-size: .8rem;
+  z-index: 10;
+}
+
+.lang-switch button {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--on-surface-variant);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.lang-switch button.is-active { background: var(--primary); color: var(--on-primary); }
