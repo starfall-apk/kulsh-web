@@ -11,11 +11,15 @@
 <link rel="icon" type="image/png" href="assets/logo.png" />
 <link rel="apple-touch-icon" href="assets/logo.png" />
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400..700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600;8..144,700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<!-- Шрифты и иконки локальные: preload тянет их параллельно с HTML/CSS -->
+<link rel="preload" href="fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/google-sans-code-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="fonts/fonts.css" />
 
+<link rel="stylesheet" href="vendor/katex/katex.min.css" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -94,6 +98,8 @@
         <div class="empty-lottie" id="emptyLottie" aria-hidden="true"></div>
         <h1 class="empty-title" data-i18n="empty.title">Чем займёмся?</h1>
         <p class="empty-sub" data-i18n="empty.sub">Спрашивай о чём угодно — код, идеи, разбор файлов, разговор по душам.</p>
+
+        <div class="empty-model" id="emptyModel"></div>
 
         <div class="suggestion-grid" id="suggestionGrid"></div>
       </div>
@@ -280,21 +286,7 @@
           <span class="settings-row-title" data-i18n="settings.appearance.fontFamily"></span>
           <span class="settings-row-sub" data-i18n="settings.appearance.fontFamilySub"></span>
         </div>
-        <div class="segmented" id="fontFamilySeg"><button class="segmented-btn" data-v="roboto" data-i18n="settings.opt.roboto"></button><button class="segmented-btn" data-v="flex" data-i18n="settings.opt.flex"></button><button class="segmented-btn" data-v="system" data-i18n="settings.opt.system"></button></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-text">
-          <span class="settings-row-title" data-i18n="settings.appearance.showAvatars"></span>
-          <span class="settings-row-sub" data-i18n="settings.appearance.showAvatarsSub"></span>
-        </div>
-        <button class="switch" id="showAvatarsSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-text">
-          <span class="settings-row-title" data-i18n="settings.appearance.showNames"></span>
-          <span class="settings-row-sub" data-i18n="settings.appearance.showNamesSub"></span>
-        </div>
-        <button class="switch" id="showNamesSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+        <div class="segmented" id="fontFamilySeg"><button class="segmented-btn" data-v="gsans" data-i18n="settings.opt.gsans"></button><button class="segmented-btn" data-v="rflex" data-i18n="settings.opt.rflex"></button><button class="segmented-btn" data-v="system" data-i18n="settings.opt.system"></button></div>
       </div>
       <div class="settings-row">
         <div class="settings-row-text">
@@ -302,13 +294,6 @@
           <span class="settings-row-sub" data-i18n="settings.appearance.reduceMotionSub"></span>
         </div>
         <button class="switch" id="reduceMotionSwitch" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
-      </div>
-      <div class="settings-row">
-        <div class="settings-row-text">
-          <span class="settings-row-title" data-i18n="settings.appearance.lottie"></span>
-          <span class="settings-row-sub" data-i18n="settings.appearance.lottieSub"></span>
-        </div>
-        <button class="switch" id="lottieSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
       </div>
     </section>
 
@@ -372,6 +357,7 @@
 
 <script src="lottie.min.js"></script>
 <script src="marked.min.js"></script>
+<script src="vendor/katex/katex.min.js"></script>
 <script src="i18n.js"></script>
 <script src="app.js"></script>
 

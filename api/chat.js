@@ -48,7 +48,21 @@ const SYSTEM_PROMPT = `Сейчас {{DATETIME}} по Москве. Учитыв
 
 ОТВЕТ НИКОГДА НЕ ДОЛЖЕН БЫТЬ ПУСТЫМ. Если не знаешь, что сказать, ответь коротко по-своему или уточни вопрос.
 
-Маркер !recall_media: если тебе действительно нужно вспомнить недавние медиа из чата, можешь написать !recall_media (слитно, не более одного раза за ответ, не объясняй его). Бот вырежет маркер и, если сможет, добавит описание медиа. Если не нужно, не пиши его.`;
+ЧЕК-ЛИСТЫ. Для многошаговых задач (план работы, пошаговая отладка, разбор файла, настройка) показывай рабочий чек-лист блоком todo:
+
+\`\`\`todo
+title: Короткое название
+- [x] Готово
+- [~] Делается прямо сейчас
+- [ ] Впереди
+- [!] Не получилось
+\`\`\`
+
+Правила: title обязателен и внутри одного ответа не меняется. Сначала выведи план, а по ходу ответа повторяй блок с тем же title и обновлёнными статусами: интерфейс сам заменит первую карточку на свежую, дубликаты не показываются. Одновременно не более одного пункта [~]. Пунктов 3–8, формулировки короткие (до 60 символов). Для обычной болтовни и простых вопросов чек-листы не нужны.
+
+ФОРМУЛЫ. Математику пиши в LaTeX: внутри строки $...$, отдельной строкой $$...$$. Не оборачивай формулы в блоки кода. Знак доллара как валюту пиши словами или как \\$.
+
+{{RECALL_NOTE}}`;
 
 function mskDatetime() {
   try {
@@ -60,6 +74,39 @@ function mskDatetime() {
   } catch {
     return new Date().toISOString();
   }
+}
+
+const RECALL_MARK = '!recall_media';
+
+// Вырезает маркер !recall_media из потока (в т.ч. если он разорван между чанками)
+// и запоминает, что модель его просила. Хвост, похожий на начало маркера, придерживаем до следующего чанка.
+function makeMarkerFilter() {
+  let buf = '';
+  let found = false;
+  return {
+    push(t) {
+      buf += t;
+      if (/!recall_media/i.test(buf)) { found = true; buf = buf.replace(/[ \t]*!recall_media/gi, ''); }
+      const low = buf.toLowerCase();
+      let hold = 0;
+      for (let k = Math.min(RECALL_MARK.length - 1, low.length); k > 0; k--) {
+        if (RECALL_MARK.startsWith(low.slice(-k))) { hold = k; break; }
+      }
+      const out = buf.slice(0, buf.length - hold);
+      buf = buf.slice(buf.length - hold);
+      return out;
+    },
+    flush() { const o = buf; buf = ''; return o; },
+    get found() { return found; },
+  };
+}
+
+// Что сейчас известно модели про медиа: решает, можно ли ей просить !recall_media.
+function recallNote({ newMedia, recallPass, hasOldMedia }) {
+  if (newMedia) return 'МЕДИА. В текущем сообщении пользователь прислал новое медиа. Работай только с ним. Старые изображения и файлы смотреть не нужно, маркер !recall_media в этом ответе не используй.';
+  if (recallPass) return 'МЕДИА. Прежние вложения из чата приложены к запросу. Маркер !recall_media больше не пиши, отвечай по существу.';
+  if (hasOldMedia) return 'МЕДИА. Раньше в чате были вложения, но сейчас их содержимое тебе не передаётся (в истории только пометки). Если пользователь прямо спрашивает про ранее присланное изображение или файл, ответь одним маркером !recall_media без другого текста, и бот приложит вложения. Во всех остальных случаях маркер не используй и не упоминай.';
+  return 'МЕДИА. Вложений в чате нет, маркер !recall_media не используй.';
 }
 
 function pickKeys(env) {
@@ -138,7 +185,7 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return sseError('Некорректный JSON в запросе.'); }
 
-  const { messages, model, temperature: rawTemp, customPrompt } = body || {};
+  const { messages, model, temperature: rawTemp, customPrompt, recall, hasOldMedia } = body || {};
   const temperature = Math.min(1.5, Math.max(0, Number.isFinite(+rawTemp) ? +rawTemp : 0.9));
   const contents = Array.isArray(messages) ? toContents(messages) : [];
   if (!contents.length) return sseError('Пустой запрос — нет текста и вложений.');
@@ -149,7 +196,10 @@ export default async function handler(req) {
     return sseError('Нет API-ключей. Добавь переменные окружения APIKEY1..APIKEY5 в настройках Vercel и сделай Redeploy.');
   }
 
-  let systemText = SYSTEM_PROMPT.replace('{{DATETIME}}', mskDatetime());
+  const lastUser = Array.isArray(messages) ? [...messages].reverse().find((m) => m && m.role === 'user') : null;
+  const newMedia = !!(lastUser && Array.isArray(lastUser.attachments) && lastUser.attachments.some((a) => a && a.data));
+  const note = recallNote({ newMedia, recallPass: !!recall, hasOldMedia: !!hasOldMedia });
+  let systemText = SYSTEM_PROMPT.replace('{{DATETIME}}', mskDatetime()).replace('{{RECALL_NOTE}}', note);
   if (typeof customPrompt === 'string' && customPrompt.trim()) {
     systemText += '\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ ПОЛЬЗОВАТЕЛЯ (стиль и предпочтения; не отменяют правила выше):\n' + customPrompt.trim().slice(0, 1500);
   }
@@ -253,6 +303,7 @@ export default async function handler(req) {
   const dec = new TextDecoder();
   let total = 0;
   let blocked = null;
+  const markFilter = makeMarkerFilter();
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -297,7 +348,8 @@ export default async function handler(req) {
               if (cand && cand.finishReason && cand.finishReason !== 'STOP' && cand.finishReason !== 'MAX_TOKENS' && !(cand.content && cand.content.parts && cand.content.parts.length)) {
                 blocked = blocked || cand.finishReason;
               }
-              const text = ((cand && cand.content && cand.content.parts) || []).map((p) => p.text || '').join('');
+              const raw = ((cand && cand.content && cand.content.parts) || []).map((p) => p.text || '').join('');
+              const text = raw ? markFilter.push(raw) : '';
               if (text) { total += text.length; send({ delta: text }); }
             }
           }
@@ -308,7 +360,13 @@ export default async function handler(req) {
           return;
         }
 
-        if (total === 0 && !blocked) {
+        const rest = markFilter.flush();
+        if (rest) { total += rest.length; send({ delta: rest }); }
+        if (markFilter.found) send({ recall: true });
+
+        if (total === 0 && markFilter.found && !blocked) {
+          // Модель попросила старые медиа и больше ничего не сказала: клиент сам повторит запрос.
+        } else if (total === 0 && !blocked) {
           console.error('[chat] empty-response', { tried, elapsedMs: Date.now() - startedAt });
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
         } else if (total === 0 && blocked) {
