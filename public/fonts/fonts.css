@@ -1,3 +1,10 @@
+/* САМОЕ ВАЖНОЕ: @import обязан идти до любых других правил (кроме @charset/@layer).
+   Раньше он стоял в середине файла — после @font-face от Google Sans. Браузеры
+   такое правило игнорируют, поэтому Google-шрифт вообще не подгружался, и всё
+   падало на локальный subset, где лигатур balance/psychology/download нет. */
+
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block");
+
 /* Локальные шрифты KulshGPT — грузятся вместе с сайтом, без обращений к fonts.googleapis.com.
    Google Sans Flex и Google Sans Code не содержат кириллицу, поэтому для русского текста
    в стеке стоят Roboto Flex / Roboto Mono (кириллические подмножества). */
@@ -41,38 +48,32 @@
 }
 
 /* ==========================================================================
-   Material Symbols Rounded — иконки интерфейса.
+   Material Symbols Rounded.
 
-   Проблема с fallback и почему порядок стека критичен:
+   Локальный файл — собранное подмножество, там есть только те иконки,
+   что использовались на момент сборки. Полный шрифт с лигатурами
+   (balance, psychology, download и т.п.) подтягивается из Google Fonts
+   через @import в самом верху файла.
 
-   Material Symbols — это шрифт с ЛИГАТУРАМИ. Иконка «settings» получается,
-   когда шейпер видит последовательность s-e-t-t-i-n-g-s и подставляет вместо
-   неё одиночный глиф. При этом в самом шрифте ОБЫЧНЫЕ латинские буквы a-z
-   тоже присутствуют как видимые глифы — они нужны как «строительный материал»
-   для лигатур.
+   ПОРЯДОК В font-family КРИТИЧЕН. Material Symbols — шрифт с лигатурами:
+   иконка «balance» получается, когда шейпер видит текст b-a-l-a-n-c-e и
+   подменяет его одним глифом. При этом обычные латинские буквы a-z в шрифте
+   тоже есть как видимые глифы — они нужны как «строительный материал».
 
-   Когда браузер шейпит текст "balance" с font-family: "Local", "Google":
-     1. Он берёт ПЕРВЫЙ шрифт из стека, у которого есть ВСЕ нужные символы
-        для строки (b, a, l, a, n, c, e).
-     2. В локальном subset эти буквы есть → браузер остаётся на нём.
-     3. Лигатуры "balance" в локальном subset нет → рисует буквы как текст.
-     4. До Google (где лигатура есть) браузер НЕ доходит — он уже нашёл
-        подходящий шрифт на шаге 1.
+   Браузер выбирает шрифт из стека по первому, у которого есть ВСЕ нужные
+   для строки символы:
+     • если первым стоит Local — буквы b,a,l,a,n,c,e в нём есть, значит
+       он побеждает; лигатуры «balance» в нём нет → рисует текст;
+     • если первым стоит Google — он побеждает, лигатура есть → иконка.
 
-   Поэтому Google-шрифт должен идти ПЕРВЫМ в font-family. Тогда браузер сразу
-   шейпит строку по Google-шрифту, находит лигатуру и рисует иконку. Local
-   остаётся ниже как запасной: если Google недоступен, большинство иконок
-   всё равно отрисуется из локального файла (кроме тех, что в него не влезли —
-   balance, psychology, download и т.п.). */
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block");
-
+   Поэтому в стеке Google первым, Local — вторым (на случай оффлайна
+   или блокировки fonts.googleapis.com). */
 @font-face {
   font-family: "Material Symbols Rounded Local";
   font-style: normal; font-weight: 300 600; font-display: block;
   src: url("material-symbols-rounded.woff2") format("woff2");
 }
 
-/* Стек: Google первым, локальный subset вторым. */
 .material-symbols-rounded {
   font-family: "Material Symbols Rounded", "Material Symbols Rounded Local";
   font-weight: normal; font-style: normal; font-size: 24px; line-height: 1;
