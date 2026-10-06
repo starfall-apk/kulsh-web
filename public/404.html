@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>404 — Страница не найдена · KulshGPT</title>
+<meta name="theme-color" content="#141019" />
+<meta name="color-scheme" content="dark light" />
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="stylesheet" href="/errors.css" />
+<script>
+  try {
+    var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+    var t = s.theme || 'dark';
+    if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    document.documentElement.lang = s.lang || 'ru';
+  } catch (e) {}
+</script>
+</head>
+<body>
+  <div class="lang-switch" id="langSwitch">
+    <button type="button" data-lang="ru">RU</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>
+
+  <div class="card">
+    <img class="logo" src="/assets/logo.png" alt="KulshGPT" />
+    <div class="code">404</div>
+    <h1 id="title">Страница не найдена</h1>
+    <p id="sub">Похоже, этой страницы больше нет или она никогда не существовала.</p>
+    <div class="actions">
+      <a class="btn btn-filled" href="/" id="back">Вернуться в чат</a>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var T = {
+    ru: {
+      title: 'Страница не найдена',
+      sub: 'Похоже, этой страницы больше нет или она никогда не существовала.',
+      back: 'Вернуться в чат',
+    },
+    en: {
+      title: 'Page not found',
+      sub: "Looks like this page is gone, or it never existed.",
+      back: 'Back to chat',
+    },
+  };
+  function lang() {
+    try {
+      var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+      return s.lang === 'en' ? 'en' : 'ru';
+    } catch (e) { return document.documentElement.lang === 'en' ? 'en' : 'ru'; }
+  }
+  function apply() {
+    var l = lang(), t = T[l];
+    document.documentElement.lang = l;
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('sub').textContent = t.sub;
+    document.getElementById('back').textContent = t.back;
+    Array.prototype.forEach.call(document.querySelectorAll('#langSwitch button'), function (b) {
+      b.classList.toggle('is-active', b.dataset.lang === l);
+    });
+  }
+  document.getElementById('langSwitch').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    try {
+      var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+      s.lang = b.dataset.lang;
+      localStorage.setItem('kulshgpt.settings.v1', JSON.stringify(s));
+    } catch (err) {}
+    apply();
+  });
+  apply();
+})();
+</script>
+</body>
+</html>
