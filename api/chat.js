@@ -66,6 +66,20 @@ title: Короткое название
 
 Правила: title обязателен и внутри одного ответа не меняется. Сначала выведи план, а по ходу ответа повторяй блок с тем же title и обновлёнными статусами: интерфейс сам заменит первую карточку на свежую, дубликаты не показываются. Одновременно не более одного пункта [~]. Пунктов 3–8, формулировки короткие (до 60 символов). Для обычной болтовни и простых вопросов чек-листы не нужны.
 
+ФАЙЛЫ. Если пользователь просит сформировать файл, скрипт, документ или архив, отдай готовый файл отдельным блоком:
+
+\`\`\`file name="имя-файла.ext"
+содержимое целиком
+\`\`\`
+
+Интерфейс сам нарисует карточку с кнопкой «Скачать» — пользователю не нужно копировать содержимое вручную. Для текстовых файлов (txt, md, json, csv, py, js, html, css и т.п.) пиши обычный текст. Для бинарных данных (архивы ZIP, изображения, PDF) используй base64:
+
+\`\`\`file name="архив.zip" encoding="base64"
+UEsDBBQAAAA...
+\`\`\`
+
+Правила: name обязателен и содержит расширение. Не оборачивай содержимое файла в другие блоки кода внутри file — только сырой текст (или base64). Внутри блока не пиши пояснений, только данные. Если пользователь просит несколько файлов — делай несколько блоков file подряд. Не выдавай .zip/.pdf/.png с выдуманным base64 — если у тебя нет реального содержимого этих форматов, честно скажи об этом и предложи текстовый вариант.
+
 ФОРМУЛЫ. Математику пиши в LaTeX: внутри строки $...$, отдельной строкой $$...$$. Не оборачивай формулы в блоки кода. Знак доллара как валюту пиши словами или как \\$.
 
 {{RECALL_NOTE}}`;
@@ -226,10 +240,6 @@ export default async function handler(req) {
   if (!guest && selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
 
   // ---- Обработка разрыва соединения клиентом (кнопка «стоп») ----
-  // Когда фронт вызывает AbortController.abort(), Vercel получает разрыв и
-  // помечает req.signal.aborted = true. Мы подхватываем это и:
-  //   1) отменяем все активные upstream-запросы к Gemini (upstreamCtrls);
-  //   2) отменяем чтение тела уже открытого стрима (upstream.body.cancel()).
   const clientSignal = req.signal;
   const upstreamCtrls = new Set();
   let upstream = null;
@@ -328,10 +338,8 @@ export default async function handler(req) {
       let buf = '';
       try {
         while (true) {
-          // 1) Клиент отвалился — прекращаем работу немедленно.
           if (clientGone || (clientSignal && clientSignal.aborted)) break;
 
-          // 2) Общий бюджет функции исчерпан.
           const remain = deadline - Date.now();
           if (remain <= 0) {
             send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
@@ -341,8 +349,6 @@ export default async function handler(req) {
           const { value, done } = await reader.read();
           if (done) break;
 
-          // КРИТИЧНО: Gemini присылает SSE с CRLF-разделителями (\r\n\r\n).
-          // Нормализуем \r\n -> \n, иначе разделитель событий "\n\n" не найдётся.
           const decoded = dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
           buf += decoded;
 
@@ -369,7 +375,6 @@ export default async function handler(req) {
           }
         }
 
-        // Если пользователь остановил — не шлём прощальных сообщений, соединение уже мертво.
         if (clientGone || (clientSignal && clientSignal.aborted)) {
           return;
         }
@@ -388,7 +393,6 @@ export default async function handler(req) {
         }
         send({ done: true });
       } catch (err) {
-        // AbortError — это нормальный выход по кнопке «стоп», не логируем как ошибку.
         if (!(err && err.name === 'AbortError') && !clientGone) {
           console.error('[chat] stream read error', err);
           send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
@@ -398,7 +402,6 @@ export default async function handler(req) {
       }
     },
     cancel() {
-      // Клиент закрыл reader (например, страница ушла или abort на фронте).
       abortUpstream();
     },
   });
