@@ -15,14 +15,14 @@
     { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      icon: 'auto_awesome', tone: 'rose', desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
   ];
 
-  // Уровни усилий — как в Claude.
+  // Уровни усилий.
   const EFFORTS = [
     { id: 'low',    icon: 'bolt',       tone: 'sky'  },
     { id: 'medium', icon: 'auto_awesome',    tone: 'mint' },
     { id: 'high',   icon: 'speed', tone: 'rose' },
   ];
 
-  // Маскот пустого чата — моаи (две версии анимации)
+  // Маскот пустого чата — моаи (четыре версии анимации)
   const LOTTIES = ['moai', 'moai2', 'freedom', 'wine'];
 
   const ACCENTS = ['violet', 'rose', 'teal', 'amber'];
@@ -301,7 +301,7 @@
   }
 
   // ============================================================
-  // MODEL PICKER (+ раздел «Усилие»)
+  // MODEL & EFFORT PICKER
   // ============================================================
   function renderModelPicker() {
     const chat = getActiveChat();
