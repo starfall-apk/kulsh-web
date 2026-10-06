@@ -723,7 +723,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
    уменьшает яркость и одновременно подкручивает насыщенность вверх —
    в тёмной теме кнопка уходит в глубокий сочный фиолетовый.
 
-     • тёмная тема: brightness(0.9) saturate(1.3) — темнее и насыщеннее.
+     • тёмная тема: brightness(0.85) saturate(1.4) — темнее и насыщеннее.
      • светлая:     brightness(1.12)              — светлее.
    ========================================================================== */
 #sendBtn {
@@ -731,11 +731,11 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
   color: var(--md-on-primary);
   transition: filter var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
-#sendBtn:hover  { filter: brightness(0.8) saturate(1.43); }
-#sendBtn:active { filter: brightness(0.67) saturate(1.55); }
+#sendBtn:hover  { filter: brightness(0.85) saturate(1.4); }
+#sendBtn:active { filter: brightness(0.75) saturate(1.5); }
 
 :root[data-theme="light"] #sendBtn:hover  { filter: brightness(1.12); }
-:root[data-theme="light"] #sendBtn:active { filter: brightness(1.6); }
+:root[data-theme="light"] #sendBtn:active { filter: brightness(1.22); }
 
 /* Состояние «стоп» (красная кнопка) — никакого фильтра, чистый --md-error. */
 #sendBtn.is-stop,
