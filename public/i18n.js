@@ -88,6 +88,13 @@ window.I18N = {
     'settings.opt.compact': 'Плотно',
     'settings.opt.relaxed': 'Свободно',
     'settings.opt.system': 'Системный',
+    'effort.title': 'Усилие',
+    'effort.low': 'Низкое',
+    'effort.medium': 'Среднее',
+    'effort.high': 'Высокое',
+    'effort.low.desc': 'Быстрее, короче ответы',
+    'effort.medium.desc': 'Баланс скорости и качества',
+    'effort.high.desc': 'Тщательный разбор, детали',
   },
   en: {
     'sidebar.newChat': 'New chat',
@@ -177,6 +184,13 @@ window.I18N = {
     'settings.opt.compact': 'Compact',
     'settings.opt.relaxed': 'Relaxed',
     'settings.opt.system': 'System',
+    'effort.title': 'Effort',
+    'effort.low': 'Low',
+    'effort.medium': 'Medium',
+    'effort.high': 'High',
+    'effort.low.desc': 'Faster, shorter replies',
+    'effort.medium.desc': 'Balance of speed and quality',
+    'effort.high.desc': 'Deeper reasoning, more detail',
   },
 };
 
