@@ -15,6 +15,13 @@
     { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      icon: 'auto_awesome', tone: 'rose', desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
   ];
 
+  // Уровни усилий — как в Claude. Влияют на дополнительные инструкции к системному промпту.
+  const EFFORTS = [
+    { id: 'low',    icon: 'bolt',       tone: 'sky'  },
+    { id: 'medium', icon: 'balance',    tone: 'mint' },
+    { id: 'high',   icon: 'psychology', tone: 'rose' },
+  ];
+
   // Маскот пустого чата — моаи (две версии анимации)
   const LOTTIES = ['moai', 'moai2'];
 
@@ -55,13 +62,14 @@
       density: 'normal',
       fontFamily: 'gsans',
       reduceMotion: false,
+      effort: 'medium',
     };
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       const st = raw ? Object.assign(defaults, JSON.parse(raw)) : defaults;
-      // Миграция: старые значения шрифта (roboto/flex) и удалённые настройки
       if (st.fontFamily === 'roboto') st.fontFamily = 'gsans';
       else if (st.fontFamily === 'flex') st.fontFamily = 'rflex';
+      if (!st.effort) st.effort = 'medium';
       delete st.showAvatars; delete st.showNames; delete st.lottie;
       return st;
     } catch { return defaults; }
@@ -83,7 +91,6 @@
   };
   window.AppState = AppState;
 
-  // Активный AbortController текущего запроса — нужен кнопке «стоп».
   let currentAbort = null;
 
   function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
@@ -294,7 +301,7 @@
   }
 
   // ============================================================
-  // MODEL PICKER
+  // MODEL PICKER  (+ раздел «Усилие»)
   // ============================================================
   function renderModelPicker() {
     const chat = getActiveChat();
@@ -327,6 +334,33 @@
         else { AppState.settings.defaultModel = m.id; saveSettings(AppState.settings); }
         renderModelPicker();
         closeModelPicker();
+      });
+      el.modelPickerMenu.appendChild(opt);
+    });
+
+    // --- Раздел «Усилие» ---
+    const divider = document.createElement('div');
+    divider.className = 'model-menu-section';
+    divider.textContent = window.t('effort.title');
+    el.modelPickerMenu.appendChild(divider);
+
+    EFFORTS.forEach((e) => {
+      const selected = (AppState.settings.effort || 'medium') === e.id;
+      const opt = document.createElement('button');
+      opt.className = 'model-option' + (selected ? ' is-selected' : '');
+      opt.setAttribute('role', 'option');
+      opt.innerHTML = `
+        <span class="model-option-icon tone-${e.tone}"><span class="material-symbols-rounded">${e.icon}</span></span>
+        <span class="model-option-text">
+          <span class="model-option-name">${window.t('effort.' + e.id)}</span>
+          <span class="model-option-desc">${window.t('effort.' + e.id + '.desc')}</span>
+        </span>
+        ${selected ? '<span class="material-symbols-rounded check">check</span>' : ''}
+      `;
+      opt.addEventListener('click', () => {
+        AppState.settings.effort = e.id;
+        saveSettings(AppState.settings);
+        renderModelPicker();
       });
       el.modelPickerMenu.appendChild(opt);
     });
@@ -389,7 +423,6 @@
   // ============================================================
   // MARKDOWN RENDERING
   // ============================================================
-  // Маркер !recall_media обрабатывает сервер; здесь страховка для старых сообщений из истории.
   function cleanRecall(t) { return String(t || '').replace(/[ \t]*!recall_media\b/gi, ''); }
 
   function escapeAttr(v) { return escapeHtml(v).replace(/"/g, '&quot;'); }
@@ -422,7 +455,6 @@
       .replace(MATH_ENV, (m) => tok(renderMath(m, true)))
       .replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => tok(renderMath(t, false)))
       .replace(MATH_INLINE, (_, t) => tok(renderMath(t, false)));
-    // Пока формула дописывается стримом — вместо сырого LaTeX показываем заглушку
     if (opts.streaming && isLast) {
       const k = seg.search(/\$\$|\\\[|\\begin\{/);
       if (k >= 0) {
@@ -433,9 +465,8 @@
   }
 
   // ---------- Чек-листы ----------
-  // Блок ```todo  title: …  - [x] готово  - [~] в работе  - [ ] впереди  - [!] не вышло
   const TODO_STATUS = { ' ': 'todo', x: 'done', X: 'done', '~': 'active', '>': 'active', '!': 'fail' };
-  const todoSeen = new Map(); // msgId|key -> прошлые статусы (чтобы анимировать только изменившееся)
+  const todoSeen = new Map();
 
   function parseTodo(body) {
     const items = []; let title = '';
@@ -456,7 +487,6 @@
 
   function buildTodoCard(g, ctx) {
     const ov = (ctx.msg && ctx.msg.todoOverrides && ctx.msg.todoOverrides[g.key]) || {};
-    // Ручная правка пользователя действует, пока модель не изменила этот пункт
     const items = g.items.map((it, i) => {
       const o = ov[i];
       return { text: it.text, base: it.status, status: (o && o.base === it.status) ? o.to : it.status };
@@ -466,9 +496,6 @@
     const pct = total ? Math.round((done * 100) / total) : 0;
     const complete = total > 0 && done === total;
 
-    // Перерисовка идёт на каждом чанке стрима. Чтобы анимации не перезапускались,
-    // у изменившихся пунктов считаем возраст изменения, а у бесконечных (спиннер, пульс)
-    // фазу берём от часов — анимация продолжается ровно с того же места.
     const now = Date.now();
     const seenKey = (ctx.msgId || '') + '|' + g.key;
     const rec = todoSeen.get(seenKey);
@@ -503,7 +530,6 @@
     const tok = (html) => { store.push(html); return '\uE000' + (store.length - 1) + '\uE001'; };
     const groups = new Map();
 
-    // Код не трогаем: формулы и чек-листы ищем только вне ``` и `…`
     const parts = text.split(/(```[\s\S]*?(?:```|$)|`[^`\n]+`)/);
     const out = parts.map((part, i) => {
       if (i % 2 === 0) return mathPass(part, i === parts.length - 1, opts, tok);
@@ -518,8 +544,6 @@
         groups.set(key, { key, title: parsed.title, items: parsed.items, ti });
         return '\n\n\uE000' + ti + '\uE001\n\n';
       }
-      // Повторный блок с тем же title обновляет первую карточку. Недописанный
-      // (стримится) блок не должен «сжимать» уже показанный список.
       if (closed || parsed.items.length >= g.items.length) {
         g.items = parsed.items;
         if (parsed.title) g.title = parsed.title;
@@ -627,22 +651,36 @@
     renderModelPicker();
   }
 
-  // ---------- Маскот ----------
-  // Один SVG, три состояния: idle (моргает), think (щурится по сторонам, пока ИИ печатает), oops (ошибка).
+  // ---------- Маскот-Моаи ----------
+  // Один SVG, три состояния: idle (стоит), think (глаза в сторону), oops (ошибка).
+  // Форма черепа — вытянутая, с плавным сужением книзу; отдельный надбровный валик,
+  // глубокие глазницы, длинный прямой нос-пилон и «стоический» рот.
+  // Трещины камня создают ощущение настоящей статуи, без «полоски робота».
   function mascotSVG(state) {
     return '<svg class="mascot" data-state="' + state + '" viewBox="0 0 64 72" aria-hidden="true" focusable="false">'
-      + '<ellipse class="mc-shade" cx="32" cy="69" rx="19" ry="2.4"/>'
-      + '<path class="mc-drop" d="M51 10c-2.2 3.2-3.4 4.8-3.4 6.4a3.4 3.4 0 0 0 6.8 0c0-1.6-1.2-3.2-3.4-6.4z"/>'
+      + '<ellipse class="mc-shade" cx="32" cy="69" rx="18" ry="2.2"/>'
+      + '<path class="mc-drop" d="M52 10c-2.2 3.2-3.4 4.8-3.4 6.4a3.4 3.4 0 0 0 6.8 0c0-1.6-1.2-3.2-3.4-6.4z"/>'
       + '<g class="mc-head">'
-      + '<path class="mc-body" d="M16 4H48A6 6 0 0 1 54 10V44C54 49 51 52 48 54V66H16V54C13 52 10 49 10 44V10A6 6 0 0 1 16 4Z"/>'
-      + '<rect class="mc-ink" x="10" y="20" width="44" height="3" opacity=".9"/>'
-      + '<rect class="mc-shade" x="10" y="23" width="44" height="4"/>'
-      + '<path class="mc-ink" d="M29 30h6l1.6 22H27.4z" opacity=".88"/>'
-      + '<g class="mc-eye"><rect class="mc-ink" x="14" y="28" width="14" height="10" rx="5"/><circle class="mc-pupil" cx="21" cy="33" r="2.4"/><path class="mc-x" d="M18.5 30.5l5 5M23.5 30.5l-5 5"/></g>'
-      + '<g class="mc-eye"><rect class="mc-ink" x="36" y="28" width="14" height="10" rx="5"/><circle class="mc-pupil" cx="43" cy="33" r="2.4"/><path class="mc-x" d="M40.5 30.5l5 5M45.5 30.5l-5 5"/></g>'
-      + '<rect class="mc-ink mc-mouth-ok" x="22" y="57" width="20" height="3" rx="1.5"/>'
-      + '<path class="mc-line mc-mouth-bad" d="M22 59q2.5-3 5 0t5 0t5 0t5 0"/>'
-      + '<path class="mc-line mc-crack" d="M30 4l-3 8 4 5-3 6" style="stroke-width:1.8"/>'
+      // Тело головы: сужается к подбородку, слегка утолщено сверху.
+      + '<path class="mc-body" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L52 42C52 48 50 52 46 55L45 66H19L18 55C14 52 12 48 12 42Z"/>'
+      // Верхняя световая засветка (блик на камне).
+      + '<path class="mc-shade" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L50.5 15H13.5Z" opacity=".28"/>'
+      // Надбровный валик — «козырьком» над глазами. Это главная моаи-черта.
+      + '<path class="mc-ink" d="M12 21Q32 17 52 21L52.5 26Q32 22 11.5 26Z" opacity=".92"/>'
+      + '<path class="mc-shade" d="M12 20.3Q32 16.5 52 20.3L52 21Q32 17.2 12 21Z" opacity=".5"/>'
+      // Глубокие глазницы + зрачки.
+      + '<g class="mc-eye"><ellipse class="mc-ink" cx="21.5" cy="32" rx="5.5" ry="3.4"/><circle class="mc-pupil" cx="21.5" cy="32" r="1.9"/><path class="mc-x" d="M18.3 29.4l6.4 5M24.7 29.4l-6.4 5"/></g>'
+      + '<g class="mc-eye"><ellipse class="mc-ink" cx="42.5" cy="32" rx="5.5" ry="3.4"/><circle class="mc-pupil" cx="42.5" cy="32" r="1.9"/><path class="mc-x" d="M39.3 29.4l6.4 5M45.7 29.4l-6.4 5"/></g>'
+      // Нос-пилон: длинный, прямой, с лёгкой тенью сбоку.
+      + '<path class="mc-ink" d="M28 26.5L36 26.5L37.5 48.5Q32 50.5 26.5 48.5Z" opacity=".9"/>'
+      + '<path class="mc-shade" d="M28.2 27L32 27L32 49.5Q29 49.4 26.5 48.5Z" opacity=".55"/>'
+      // Стоический рот (плюс «злой» рот для ошибки).
+      + '<rect class="mc-ink mc-mouth-ok" x="22" y="55.5" width="20" height="2.2" rx="1.1"/>'
+      + '<path class="mc-line mc-mouth-bad" d="M22 57.5q2.5-3 5 0t5 0t5 0t5 0"/>'
+      // Трещины и текстура камня.
+      + '<path class="mc-line mc-crack" d="M30.5 3l-2.5 7 3.5 4-2 6" style="stroke-width:1.6"/>'
+      + '<path class="mc-line" d="M45 13l-2 4 2 3.5" style="stroke-width:1.4;opacity:.55"/>'
+      + '<path class="mc-line" d="M19.5 43l1.8 4-1 4" style="stroke-width:1.4;opacity:.55"/>'
       + '</g></svg>';
   }
 
@@ -655,7 +693,6 @@
     } catch { return ''; }
   }
 
-  // Содержимое пузыря: индикатор набора / ошибка / разметка
   function fillContent(content, m) {
     if (m.pending) {
       content.innerHTML = '<div class="typing"><span class="typing-dots"><span></span><span></span><span></span></span><span class="typing-label"></span></div>';
@@ -690,8 +727,6 @@
     }
   }
 
-  // Клик по пункту чек-листа: пользователь может поправить статус вручную.
-  // Правка действует, пока модель сама не изменит этот пункт.
   function toggleTodo(item) {
     const chat = getActiveChat();
     const node = item.closest('.msg');
@@ -736,7 +771,6 @@
     const body = document.createElement('div');
     body.className = 'msg-body';
 
-    // Мета-строка: имя · модель · время (модель и время — моноширинным Google Sans Code)
     const meta = document.createElement('div');
     meta.className = 'msg-meta';
     const name = document.createElement('span');
@@ -779,7 +813,6 @@
     fillContent(content, m);
     body.appendChild(content);
 
-    // Пометка «остановлено» — маленькая, серым, под контентом.
     if (m.stopped) {
       const stopped = document.createElement('div');
       stopped.className = 'msg-stopped';
@@ -882,7 +915,7 @@
   }
 
   // ============================================================
-  // SENDING / STREAMING (fallback: animate typing if not streamed)
+  // SENDING / STREAMING
   // ============================================================
   function autoGrow() {
     el.composerInput.style.height = 'auto';
@@ -898,15 +931,12 @@
     el.sendBtn.setAttribute('aria-label', isSending ? window.t('composer.stop') : window.t('composer.send'));
   }
 
-  // Полная остановка текущего запроса и/или fallback-анимации печати.
   function stopStreaming() {
     AppState.stoppedByUser = true;
     if (currentAbort) {
       try { currentAbort.abort(); } catch {}
       currentAbort = null;
     }
-    // Флаг isStreaming сбрасываем сразу — это заставит и цикл animateTyping,
-    // и UI моментально вернуться в нормальное состояние.
     AppState.isStreaming = false;
     setSendingState(false);
   }
@@ -944,8 +974,6 @@
     await requestAssistantReply(chat);
   }
 
-  // Fallback: если стриминг не пришёл (одним куском), анимируем печать посимвольно.
-  // Уважает флаг AppState.isStreaming — прерывается, если пользователь нажал «стоп».
   async function animateTyping(chat, msgId, fullText) {
     const msg = chat.messages.find((m) => m.id === msgId);
     if (!msg) return;
@@ -957,7 +985,7 @@
     const chunk = Math.max(1, Math.ceil(total / Math.max(1, Math.floor(duration / stepMs))));
 
     for (let i = 0; i < total; i += chunk) {
-      if (!AppState.isStreaming) return; // пользователь остановил — остаётся уже набранный префикс
+      if (!AppState.isStreaming) return;
       msg.text = fullText.slice(0, Math.min(total, i + chunk));
       renderMessages();
       await new Promise((r) => setTimeout(r, stepMs));
@@ -969,10 +997,6 @@
 
   const hasMedia = (m) => !!(m.attachments && m.attachments.some((a) => a && a.data));
 
-  // Вложения уходят в модель только из ТЕКУЩЕГО сообщения пользователя.
-  // Старые изображения не пересылаются (экономит трафик и токены и не отвлекает модель),
-  // вместо них в историю попадает короткая пометка. Если модель попросила !recall_media,
-  // клиент один раз повторяет запрос с последними старыми вложениями (recall = true).
   function buildPayload(chat, pendingId, recall) {
     const msgs = chat.messages.filter((m) => m.id !== pendingId && !m.error && (m.text || (m.attachments && m.attachments.length)));
     let lastUser = -1;
@@ -995,6 +1019,14 @@
     return { messages, hasOldMedia: oldMediaIdx.length > 0, canRecall: oldMediaIdx.length > 0 && !newMedia };
   }
 
+  // Подсказки усилий: аккуратно добавляются к кастомному промпту и не ломают его.
+  function effortPrefix() {
+    const e = AppState.settings.effort || 'medium';
+    if (e === 'low')    return 'СТИЛЬ ОТВЕТА: отвечай кратко и по существу, без лишних деталей и вступлений.';
+    if (e === 'high')   return 'СТИЛЬ ОТВЕТА: рассуждай тщательно, раскрывай детали, приводи примеры и крайние случаи.';
+    return '';
+  }
+
   async function requestAssistantReply(chat) {
     const pendingMsg = { id: uid(), role: 'assistant', text: '', pending: true, ts: Date.now(), model: chat.model };
     chat.messages.push(pendingMsg);
@@ -1011,6 +1043,10 @@
     let deltaCount = 0;
     let failedHttp = false;
 
+    let cp = window.KulshAuth.guest ? '' : (AppState.settings.customPrompt || '');
+    const ep = effortPrefix();
+    if (ep) cp = ep + (cp ? '\n' + cp : '');
+
     try {
       let recallPass = false;
       for (let pass = 0; pass < 2; pass++) {
@@ -1026,7 +1062,7 @@
             messages: payload.messages,
             model: window.KulshAuth.guest ? window.KulshAuth.GUEST_MODEL : chat.model,
             temperature: AppState.settings.temperature,
-            customPrompt: window.KulshAuth.guest ? '' : (AppState.settings.customPrompt || ''),
+            customPrompt: cp,
             recall: recallPass,
             hasOldMedia: payload.hasOldMedia,
           }),
@@ -1067,7 +1103,6 @@
           }
         }
 
-        // Модель попросила старые медиа и (кроме маркера) ничего не ответила: повторяем один раз с вложениями.
         if (recallAsked && !recallPass && payload.canRecall && !AppState.stoppedByUser && !fullText.trim()) {
           recallPass = true;
           const msg = getMsg();
@@ -1077,7 +1112,6 @@
         break;
       }
     } catch (e) {
-      // AbortError при нажатии «стоп» — это НЕ ошибка, обрабатываем как нормальную остановку.
       if (!(e && e.name === 'AbortError')) {
         console.error('[chat] request failed', e);
       }
@@ -1086,15 +1120,12 @@
     currentAbort = null;
     fullText = cleanRecall(fullText);
 
-    // ---- Финализация сообщения ----
     const msg = getMsg();
     if (msg) {
       if (failedHttp) {
         Object.assign(msg, { text: window.t('error.generic'), error: true });
         delete msg.pending; delete msg.streaming;
       } else if (fullText.trim()) {
-        // Если стрим не сработал (всё одним куском) — анимируем печать.
-        // Но только если пользователь ещё не нажал «стоп».
         if (deltaCount <= 1 && fullText.length > 24 && !AppState.stoppedByUser) {
           msg.text = '';
           msg.pending = false;
@@ -1104,14 +1135,12 @@
         }
         const cur = getMsg();
         if (cur) {
-          // cur.text — то, что успело набраться (может быть префиксом, если остановили).
           cur.text = cleanRecall(cur.text || fullText).trim();
           cur.stopped = !!AppState.stoppedByUser;
           delete cur.pending; delete cur.streaming;
           if (AppState.settings.voiceAutoplay && !AppState.stoppedByUser) speakText(cur.text);
         }
       } else if (AppState.stoppedByUser) {
-        // Ничего не успело прийти и пользователь остановил — удаляем пустой пузырь.
         chat.messages.splice(chat.messages.indexOf(msg), 1);
       } else {
         Object.assign(msg, { text: gotError || window.t('error.generic'), error: true });
@@ -1135,7 +1164,7 @@
   }
 
   // ============================================================
-  // VOICE — Web Speech API (STT + TTS), free & browser-native
+  // VOICE
   // ============================================================
   let recognition = null;
   let isListening = false;
@@ -1280,12 +1309,10 @@
     el.composerInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && AppState.settings.sendOnEnter) {
         e.preventDefault();
-        // Во время стриминга Enter ничего не должен делать — только кнопка «стоп».
         if (!AppState.isStreaming) sendMessage();
       }
     });
 
-    // Кнопка отправки/остановки: два разных действия в зависимости от состояния.
     el.sendBtn.addEventListener('click', () => {
       if (AppState.isStreaming) {
         stopStreaming();
@@ -1296,7 +1323,6 @@
 
     el.micBtn.addEventListener('click', toggleListening);
 
-    // Делегирование: пункты чек-листов и кнопка «Повторить» в карточке ошибки
     el.messages.addEventListener('click', (e) => {
       const item = e.target.closest('.todo-item');
       if (item) { toggleTodo(item); return; }
@@ -1307,7 +1333,6 @@
       }
     });
 
-    // Маскот в пустом чате отзывается на тап: меняет версию анимации
     el.emptyLottie.addEventListener('click', () => {
       const cur = el.emptyLottie.dataset.pick;
       const other = LOTTIES.find((n) => n !== cur) || cur;
@@ -1329,6 +1354,8 @@
       AppState.settings.lang = btn.dataset.lang;
       saveSettings(AppState.settings);
       applySettingsToDOM();
+      // Мгновенно перевести динамически построенные куски (в т.ч. кнопку входа).
+      window.dispatchEvent(new CustomEvent('kulsh-lang-change'));
       renderChatList(el.chatSearch.value);
       renderMessages();
     });
