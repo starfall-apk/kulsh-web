@@ -18,8 +18,8 @@
   // Уровни усилий.
   const EFFORTS = [
     { id: 'low',    icon: 'bolt',       tone: 'sky'  },
-    { id: 'medium', icon: 'auto_awesome',    tone: 'mint' },
-    { id: 'high',   icon: 'speed', tone: 'rose' },
+    { id: 'medium', icon: 'balance',    tone: 'mint' },
+    { id: 'high',   icon: 'psychology', tone: 'rose' },
   ];
 
   // Маскот пустого чата — моаи (четыре версии анимации)
