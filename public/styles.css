@@ -717,28 +717,33 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
    белый (#FFFFFF). В transition для color ничего нет, поэтому при смене
    темы стрелка меняет цвет мгновенно.
 
-   Фон на hover разный по темам:
-     • тёмная (по умолчанию) — уходим в тёмное: --md-primary смешиваем
-       с чёрным. Вид «темнее и насыщеннее» — пастельно-сиреневый #B98CFF
-       превращается в глубокий фиолетовый.
-     • светлая — наоборот, уходим в светлое: смешиваем с белым.
+   Затемнение/осветление на hover — через filter, а НЕ color-mix с чёрным/белым.
+   Чёрный цвет имеет нулевую насыщенность, поэтому color-mix(primary, black)
+   не только затемняет, но и обесцвечивает. А filter: brightness()+saturate()
+   уменьшает яркость и одновременно подкручивает насыщенность вверх —
+   в тёмной теме кнопка уходит в глубокий сочный фиолетовый.
+
+     • тёмная тема: brightness(0.9) saturate(1.3) — темнее и насыщеннее.
+     • светлая:     brightness(1.12)              — светлее.
    ========================================================================== */
 #sendBtn {
   background: var(--md-primary);
   color: var(--md-on-primary);
-  transition: background var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
+  transition: filter var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
-#sendBtn:hover  { background: color-mix(in srgb, var(--md-primary) 80%, black); }
-#sendBtn:active { background: color-mix(in srgb, var(--md-primary) 68%, black); }
+#sendBtn:hover  { filter: brightness(0.9) saturate(1.3); }
+#sendBtn:active { filter: brightness(0.82) saturate(1.4); }
 
-:root[data-theme="light"] #sendBtn:hover  { background: color-mix(in srgb, var(--md-primary) 78%, white); }
-:root[data-theme="light"] #sendBtn:active { background: color-mix(in srgb, var(--md-primary) 62%, white); }
+:root[data-theme="light"] #sendBtn:hover  { filter: brightness(1.12); }
+:root[data-theme="light"] #sendBtn:active { filter: brightness(1.22); }
 
+/* Состояние «стоп» (красная кнопка) — никакого фильтра, чистый --md-error. */
 #sendBtn.is-stop,
 #sendBtn.is-stop:hover,
 #sendBtn.is-stop:active {
   background: var(--md-error);
   color: var(--md-surface);
+  filter: none;
 }
 
 .composer-mic.is-listening { color: var(--md-error); animation: micPulse 1.4s ease-in-out infinite; }
@@ -1351,10 +1356,11 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
   height: 36px; padding: 0 14px 0 10px; border-radius: var(--r-full);
   background: var(--md-primary); color: var(--md-on-primary);
   font-size: .8rem; font-weight: 500;
-  transition: background var(--dur-s) var(--ease-standard);
+  transition: filter var(--dur-s) var(--ease-standard);
   flex-shrink: 0;
 }
-.file-card-dl:hover { background: color-mix(in srgb, var(--md-primary) 88%, black); }
+.file-card-dl:hover { filter: brightness(0.9) saturate(1.3); }
+:root[data-theme="light"] .file-card-dl:hover { filter: brightness(1.12); }
 .file-card-dl .material-symbols-rounded { font-size: 18px; }
 .file-card-content { display: none; }
 
