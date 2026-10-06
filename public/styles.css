@@ -328,8 +328,18 @@ select, textarea { scrollbar-width: thin; }
   mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%);
   pointer-events: none; z-index: -1;
 }
-.sidebar-open-btn { display: none; }
-.app.sidebar-collapsed .sidebar-open-btn { display: inline-flex; }
+
+/* Кнопка «открыть панель».
+   ВАЖНО: селектор идёт через .topbar, чтобы специфичность была (0,2,0).
+   Голое `.sidebar-open-btn { display: none }` имеет специфичность (0,1,0) —
+   столько же, сколько у `.icon-btn { display: inline-flex }`, который живёт
+   в auth.css и подключается ПОСЛЕ styles.css. При равной специфичности
+   побеждает более поздний в каскаде → кнопка была видна всегда, потому что
+   .icon-btn перебивал скрытие. Добавление .topbar в селектор даёт (0,2,0),
+   и правило работает независимо от порядка подключения файлов.
+   Правило показа ниже — (0,3,0), оно выигрывает у обоих. */
+.topbar .sidebar-open-btn { display: none; }
+.app.sidebar-collapsed .topbar .sidebar-open-btn { display: inline-flex; }
 
 .topbar-spacer { flex: 1; }
 
@@ -824,13 +834,10 @@ select, textarea { scrollbar-width: thin; }
   .app:not(.sidebar-collapsed) .sidebar { margin-left: 0; }
   .app:not(.sidebar-collapsed) .sidebar-backdrop { display: block; }
   .sidebar-toggle { display: none; }
-  /* Видимостью .sidebar-open-btn управляют базовые правила выше:
-       .sidebar-open-btn { display: none; }
-       .app.sidebar-collapsed .sidebar-open-btn { display: inline-flex; }
-     Поэтому на мобильном кнопка «открыть панель» показывается только
-     когда .sidebar-collapsed активен (панель реально свёрнута) и прячется,
-     как только панель открывается. !important здесь не нужен и раньше
-     заставлял кнопку висеть на экране даже при открытой панели. */
+  /* Видимостью .sidebar-open-btn управляют базовые правила выше
+     (.topbar .sidebar-open-btn / .app.sidebar-collapsed .topbar .sidebar-open-btn).
+     На мобильном кнопка показывается только при свёрнутой панели и прячется,
+     как только панель открывается. Никаких !important здесь не нужно. */
 
   html, body, .app, .main { width: 100%; max-width: 100%; overflow-x: hidden; }
   .app { position: fixed; inset: 0; height: 100%; }
