@@ -824,7 +824,13 @@ select, textarea { scrollbar-width: thin; }
   .app:not(.sidebar-collapsed) .sidebar { margin-left: 0; }
   .app:not(.sidebar-collapsed) .sidebar-backdrop { display: block; }
   .sidebar-toggle { display: none; }
-  .sidebar-open-btn { display: inline-flex !important; }
+  /* Видимостью .sidebar-open-btn управляют базовые правила выше:
+       .sidebar-open-btn { display: none; }
+       .app.sidebar-collapsed .sidebar-open-btn { display: inline-flex; }
+     Поэтому на мобильном кнопка «открыть панель» показывается только
+     когда .sidebar-collapsed активен (панель реально свёрнута) и прячется,
+     как только панель открывается. !important здесь не нужен и раньше
+     заставлял кнопку висеть на экране даже при открытой панели. */
 
   html, body, .app, .main { width: 100%; max-width: 100%; overflow-x: hidden; }
   .app { position: fixed; inset: 0; height: 100%; }
