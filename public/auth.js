@@ -87,8 +87,8 @@
     if (!settings && !slot) return;
     accountBtn = document.createElement('button');
     accountBtn.type = 'button';
-    // Если ставим рядом с «Поддержать» и «Настройки» — берём тот же класс .sidebar-user,
-    // чтобы padding / gap / font-size / высота были идентичны соседям.
+    // Если ставим рядом с «Поддержать» / «Настройки» — берём тот же класс .sidebar-user,
+    // чтобы padding / gap / font-size / min-height / цвет были идентичны соседям.
     accountBtn.className = (settings ? 'sidebar-user ' : '') + 'account-btn';
     accountBtn.id = 'accountBtn';
     accountBtn.addEventListener('click', () => open());
@@ -103,11 +103,12 @@
   function renderAccountBtn() {
     if (!accountBtn) return;
     const s = tr();
-    // Иконку гостя рисуем тем же шрифтом Material Symbols Rounded, что и соседние
-    // кнопки «Поддержать» / «Настройки» — размер и вертикальное выравнивание совпадают.
+    // И гостевую иконку, и аватар кладём в один слот .acc-slot фиксированного
+    // размера (24×24) — так кнопка совпадает с «Поддержать» и «Настройки»
+    // и когда ты гость, и когда авторизован.
     accountBtn.innerHTML = A.user
-      ? `${avatarHTML(A.user, 'account-av')}<span class="account-name">${esc(A.user.name)}</span>`
-      : `<span class="material-symbols-rounded">person</span><span>${s.login}</span>`;
+      ? `<span class="acc-slot">${avatarHTML(A.user, 'account-av')}</span><span class="account-name">${esc(A.user.name)}</span>`
+      : `<span class="acc-slot"><span class="material-symbols-rounded">person</span></span><span>${esc(s.login)}</span>`;
     document.documentElement.dataset.guest = A.user ? 'off' : 'on';
   }
 
@@ -198,7 +199,6 @@
     setTimeout(renderAccountBtn, 0);
   }
 
-  // Смена языка — сразу перерисовываем кнопку и открытый диалог.
   window.addEventListener('kulsh-lang-change', () => {
     renderAccountBtn();
     if (dlg.classList.contains('is-open')) render();
