@@ -86,20 +86,29 @@
 
 /* =========================================================================
    Кнопка аккаунта в сайдбаре.
-   Явно задаём ВСЕ свойства, влияющие на размер/отступы, и оборачиваем
-   иконку и аватар в один и тот же слот .acc-slot фиксированного размера.
-   Так «Войти», «Поддержать» и «Настройки» выглядят идентично при любом
-   порядке подключения CSS-файлов и в обоих состояниях (гость/авторизован).
+   Раньше здесь использовались `gap: inherit` / `padding: inherit` —
+   они брали значения у .sidebar-bottom (gap 2px, padding 0), из-за чего
+   кнопка «Войти» ехала относительно «Поддержать» и «Настройки», теряла
+   свои отступы и font-size. Теперь все ключевые метрики заданы явно и
+   в точности совпадают с .sidebar-user из styles.css:
+     padding: 10px 14px; gap: 12px; font-size: .875rem;
+     border-radius: var(--r-full);
+   Плюс добавлен тот же transition фона, что и у .chat-list-item и
+   остальных кнопок ряда — подсветка при наведении появляется плавно.
    ========================================================================= */
 .sidebar-user.account-btn {
   display: flex;
   align-items: center;
-  gap: inherit;
+  gap: 12px;
   width: 100%;
   margin: 0;
-  padding: inherit;
-  font: inherit;
-  color: inherit;
+  padding: 10px 14px;
+  border-radius: var(--r-full);
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: inherit;
+  line-height: inherit;
+  color: var(--md-on-surface);
   background: none;
   border: none;
   cursor: pointer;
@@ -107,26 +116,35 @@
   box-sizing: border-box;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-s) var(--ease-standard);
+}
+.sidebar-user.account-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 6%, transparent);
 }
 
-/* Слот под иконку/аватар — ровно 24×24, как font-size у material-symbols-rounded */
+/* Слот под иконку/аватар — ровно 20×20, как font-size у .sidebar-user .material-symbols-rounded */
 .sidebar-user.account-btn .acc-slot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   line-height: 1;
   overflow: hidden;
 }
 
 .sidebar-user.account-btn .acc-slot .material-symbols-rounded {
   display: block;
-  width: 24px;
-  height: 24px;
-  font-size: 24px;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
   line-height: 1;
+  color: var(--md-on-surface-variant);
+}
+
+.sidebar-user.account-btn:hover .acc-slot .material-symbols-rounded {
+  color: var(--md-primary);
 }
 
 .sidebar-user.account-btn .acc-slot .account-av,
@@ -134,11 +152,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   flex-shrink: 0;
   line-height: 1;
@@ -189,6 +207,7 @@
   color: var(--md-on-surface);
   max-width: 180px;
   background: none; border: none; cursor: pointer;
+  transition: background var(--dur-s) var(--ease-standard);
 }
 .donate-header .account-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
 .donate-header .account-btn + .brand { margin-left: auto; }
