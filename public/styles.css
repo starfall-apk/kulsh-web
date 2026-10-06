@@ -230,6 +230,97 @@ select, textarea { scrollbar-width: thin; }
   * { scroll-behavior: auto !important; }
 }
 
+/* ==========================================================================
+   BOOT SKELETON — full-screen заглушка на время загрузки интерфейса.
+   Показывается, пока <body class="is-booting">. app.js снимает класс в конце init().
+   ========================================================================== */
+body.is-booting .app { visibility: hidden; }
+body.is-booting .boot-skeleton { opacity: 1; }
+
+.boot-skeleton {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex;
+  background: var(--md-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms var(--ease-standard);
+}
+body.is-booting .boot-skeleton { pointer-events: auto; }
+
+.sk {
+  position: relative;
+  background: color-mix(in srgb, var(--md-on-surface) 7%, var(--md-surface-container));
+  border-radius: 12px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.sk::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--md-on-surface) 5%, transparent) 40%,
+    color-mix(in srgb, var(--md-on-surface) 14%, transparent) 50%,
+    color-mix(in srgb, var(--md-on-surface) 5%, transparent) 60%,
+    transparent 80%
+  );
+  animation: sk-shimmer 1.5s linear infinite;
+  will-change: transform;
+}
+@keyframes sk-shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+.boot-sidebar {
+  width: 288px; flex-shrink: 0;
+  padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--md-surface-container-low);
+  border-right: 1px solid var(--md-outline-variant);
+}
+.sk-btn { height: 44px; border-radius: 999px; }
+.sk-search { height: 44px; border-radius: 999px; }
+.boot-chat-list { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 8px 0; }
+.sk-chat { height: 44px; border-radius: 999px; }
+.sk-chat.sk-short { width: 70%; }
+.boot-sidebar-bottom {
+  padding-top: 8px;
+  border-top: 1px solid var(--md-outline-variant);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sk-user { height: 40px; border-radius: 999px; }
+
+.boot-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.boot-topbar { height: 60px; padding: 0 16px; display: flex; align-items: center; }
+.sk-chip { width: 140px; height: 32px; border-radius: 999px; }
+.boot-hero {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 24px;
+}
+.sk-circle { width: 120px; height: 120px; border-radius: 50%; margin-bottom: 12px; }
+.sk-title { width: min(320px, 60%); height: 32px; border-radius: 999px; }
+.sk-sub { width: min(420px, 70%); height: 16px; border-radius: 999px; }
+.boot-cards {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px; margin-top: 24px; width: 100%; max-width: 640px;
+}
+.sk-card { height: 56px; border-radius: 16px; }
+.boot-composer { padding: 4px 20px 14px; }
+.sk-input { height: 56px; border-radius: 25px; max-width: 820px; margin: 0 auto; }
+
+@media (max-width: 900px) {
+  .boot-sidebar { display: none; }
+  .boot-topbar { height: calc(56px + env(safe-area-inset-top, 0px)); }
+  .boot-cards { grid-template-columns: 1fr; }
+  .boot-composer { padding: 4px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; }
+  .boot-skeleton { transition: none; }
+}
+
 /* ===== APP SHELL ===== */
 .app {
   position: relative; z-index: 1;
@@ -330,16 +421,30 @@ select, textarea { scrollbar-width: thin; }
 }
 
 /* Кнопка «открыть панель».
-   ВАЖНО: селектор идёт через .topbar, чтобы специфичность была (0,2,0).
-   Голое `.sidebar-open-btn { display: none }` имеет специфичность (0,1,0) —
-   столько же, сколько у `.icon-btn { display: inline-flex }`, который живёт
-   в auth.css и подключается ПОСЛЕ styles.css. При равной специфичности
-   побеждает более поздний в каскаде → кнопка была видна всегда, потому что
-   .icon-btn перебивал скрытие. Добавление .topbar в селектор даёт (0,2,0),
-   и правило работает независимо от порядка подключения файлов.
-   Правило показа ниже — (0,3,0), оно выигрывает у обоих. */
-.topbar .sidebar-open-btn { display: none; }
-.app.sidebar-collapsed .topbar .sidebar-open-btn { display: inline-flex; }
+   Состояния: свёрнутая панель (приложение .sidebar-collapsed) — кнопка
+   видима (width 40px, opacity 1, margin-right 0); открытая — прячется,
+   ужимаясь по ширине и уезжая за край панели (width 0, opacity 0,
+   отрицательный margin-right съедает gap topbar'а, чтобы правая часть
+   не сдвигалась). Всё анимируется плавно. */
+.topbar .sidebar-open-btn {
+  width: 0;
+  min-width: 0;
+  margin-right: -8px;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width var(--dur-m) var(--ease-emphasized),
+    margin-right var(--dur-m) var(--ease-emphasized),
+    opacity var(--dur-m) var(--ease-standard);
+}
+.app.sidebar-collapsed .topbar .sidebar-open-btn {
+  width: 40px;
+  margin-right: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .topbar-spacer { flex: 1; }
 
@@ -599,13 +704,19 @@ select, textarea { scrollbar-width: thin; }
 }
 .composer-input::placeholder { color: var(--md-on-surface-variant); }
 
-.composer-send {
-  background: var(--md-primary); color: var(--md-on-primary);
+/* Кнопка отправки. ВАЖНО: правило идёт через #sendBtn (специфичность 1,0,0),
+   потому что у кнопки два класса — .icon-btn и .composer-send. В auth.css
+   (.icon-btn { background: none; color: on-surface-variant }) идёт ПОСЛЕ
+   styles.css, при равной специфичности (0,1,0) перебивает цвет и фон.
+   ID-селектор выигрывает у любых классов, поэтому кнопка снова фиолетовая. */
+#sendBtn {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
   transition: background var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
-.composer-send:hover { background: color-mix(in srgb, var(--md-primary) 88%, black); }
-.composer-send:disabled { opacity: .35; cursor: default; }
-.composer-send.is-stop { background: var(--md-error); color: var(--md-surface); }
+#sendBtn:hover { background: color-mix(in srgb, var(--md-primary) 88%, black); color: var(--md-on-primary); }
+#sendBtn:active { background: color-mix(in srgb, var(--md-primary) 78%, black); }
+#sendBtn.is-stop { background: var(--md-error); color: var(--md-surface); }
 
 .composer-mic.is-listening { color: var(--md-error); animation: micPulse 1.4s ease-in-out infinite; }
 @keyframes micPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
@@ -834,10 +945,9 @@ select, textarea { scrollbar-width: thin; }
   .app:not(.sidebar-collapsed) .sidebar { margin-left: 0; }
   .app:not(.sidebar-collapsed) .sidebar-backdrop { display: block; }
   .sidebar-toggle { display: none; }
-  /* Видимостью .sidebar-open-btn управляют базовые правила выше
-     (.topbar .sidebar-open-btn / .app.sidebar-collapsed .topbar .sidebar-open-btn).
-     На мобильном кнопка показывается только при свёрнутой панели и прячется,
-     как только панель открывается. Никаких !important здесь не нужно. */
+
+  /* На мобильном topbar gap — 4px, а не 8px; компенсируем. */
+  .topbar .sidebar-open-btn { margin-right: -4px; }
 
   html, body, .app, .main { width: 100%; max-width: 100%; overflow-x: hidden; }
   .app { position: fixed; inset: 0; height: 100%; }
@@ -1189,6 +1299,46 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
 @keyframes todoPop  { 0% { transform: scale(.7); } 100% { transform: scale(1); } }
 @keyframes todoDraw { from { stroke-dashoffset: 18; } to { stroke-dashoffset: 0; } }
 
+/* ---------- Файлы от бота ---------- */
+.file-card {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 0; padding: 12px 14px;
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-md);
+  transition: border-color var(--dur-s) var(--ease-standard), background var(--dur-s);
+}
+.file-card:hover { border-color: color-mix(in srgb, var(--md-sky) 40%, var(--md-outline-variant)); }
+.file-card-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--md-sky-container); color: var(--md-on-sky-container);
+  font-size: 22px; font-variation-settings: 'wght' 400, 'FILL' 0;
+}
+.file-card-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.file-card-name {
+  font-family: var(--font-mono); font-size: .85rem; font-weight: 500;
+  color: var(--md-on-surface);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.file-card-size { font-family: var(--font-mono); font-size: .72rem; color: var(--md-on-surface-variant); }
+.file-card-dl {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px 0 10px; border-radius: var(--r-full);
+  background: var(--md-primary); color: var(--md-on-primary);
+  font-size: .8rem; font-weight: 500;
+  transition: background var(--dur-s) var(--ease-standard);
+  flex-shrink: 0;
+}
+.file-card-dl:hover { background: color-mix(in srgb, var(--md-primary) 88%, black); }
+.file-card-dl .material-symbols-rounded { font-size: 18px; }
+.file-card-content { display: none; }
+
+@media (max-width: 640px) {
+  .file-card { flex-wrap: wrap; }
+  .file-card-dl { width: 100%; justify-content: center; }
+}
+
 /* ---------- Формулы (KaTeX) ---------- */
 .msg-content .katex { font-size: 1.08em; }
 .msg-content .math-block { display: block; overflow-x: auto; overflow-y: hidden; padding: 8px 4px; margin: .35em 0; text-align: center; }
@@ -1206,7 +1356,7 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
 @keyframes mathShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .mascot *, .todo *, .math-pending, .empty-lottie { animation: none !important; transition: none !important; }
+  .mascot *, .todo *, .math-pending, .empty-lottie, .sk::after { animation: none !important; transition: none !important; }
 }
 @media (max-width: 640px) {
   .msg-avatar { width: 32px; height: 32px; }
