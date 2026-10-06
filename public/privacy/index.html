@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Политика конфиденциальности — KulshGPT</title>
 <link rel="icon" type="image/png" href="/assets/logo.png" />
-<link rel="stylesheet" href="/fonts/fonts.css" />
+<link rel="stylesheet" href="/fonts/fonts-v2.css" />
 <script>try{var s=JSON.parse(localStorage.getItem("kulshgpt.settings.v1")||"{}"),r=document.documentElement,t=s.theme||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";r.dataset.theme=t;r.dataset.accent=s.accent||"violet";r.lang=s.lang==="en"?"en":"ru"}catch(e){}</script>
 <style>
 :root{--bg:#141019;--fg:#ECE6F5;--mut:#B0A8C0;--line:#322b3d;--card:#201b29;--p:#B98CFF}
@@ -27,8 +27,8 @@ p,li{color:var(--mut)}.card{background:var(--card);border-radius:18px;padding:4p
 <h1>Политика конфиденциальности</h1>
 <p>Редакция от октября 2026. Кратко о том, какие данные использует KulshGPT.</p>
 <div class="card">
-<h2>Что хранится у тебя в браузере</h2>
-<p>Чаты, настройки (тема, язык, цвета, инструкции) и отметка о согласии сохраняются в localStorage твоего браузера. Мы не получаем эти данные на сервер для хранения; очистка данных сайта удаляет их.</p>
+<h2>Что хранится</h2>
+<p>Без входа чаты и настройки хранятся только в localStorage твоего браузера. После входа они дополнительно сохраняются на сервере в твоём аккаунте (текст чатов и настройки, без вложений-файлов) и доступны на других устройствах. При выходе локальная копия чатов удаляется; чаты и настройки можно удалить в настройках.</p>
 <h2>Что отправляется на сервер</h2>
 <p>Текст сообщений, вложения и выбранные параметры отправляются на наш сервер и далее — в API Google Gemini для генерации ответа. Не отправляй конфиденциальную информацию, которую не хочешь передавать этим сервисам.</p>
 <h2>Вход в аккаунт</h2>
@@ -45,8 +45,8 @@ p,li{color:var(--mut)}.card{background:var(--card);border-radius:18px;padding:4p
 <h1>Privacy Policy</h1>
 <p>Version of October 2026. A short summary of the data KulshGPT uses.</p>
 <div class="card">
-<h2>Stored in your browser</h2>
-<p>Chats, settings (theme, language, colors, instructions) and your consent flag are kept in your browser's localStorage. We do not store them on a server; clearing site data removes them.</p>
+<h2>What is stored</h2>
+<p>When signed out, chats and settings stay only in your browser's localStorage. After you sign in they are also saved on the server under your account (chat text and settings, without file attachments) and are available on your other devices. Signing out removes the local copy of your chats; you can delete chats and settings in the settings.</p>
 <h2>Sent to the server</h2>
 <p>Message text, attachments and chosen parameters are sent to our server and on to the Google Gemini API to generate replies. Do not send confidential information you do not want shared with these services.</p>
 <h2>Signing in</h2>

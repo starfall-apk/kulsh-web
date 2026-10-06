@@ -36,7 +36,7 @@ for src, dst in COPY.items():
 f = TTFont(os.path.join(NM, 'material-symbols', 'material-symbols-rounded.woff2'))
 f = instancer.instantiateVariableFont(f, {'GRAD': 0, 'opsz': 24, 'wght': 400, 'FILL': (0, 1)})
 f.flavor = 'woff2'
-f.save(os.path.join(OUT, 'material-symbols-rounded.woff2'))
+f.save(os.path.join(OUT, 'material-symbols-rounded-v2.woff2'))  # при пересборке меняй v2 -> v3 и в fonts-v2.css, иначе браузер возьмёт старый файл из кеша
 
 # --- KaTeX: только woff2
 KD = os.path.join(NM, 'katex', 'dist')

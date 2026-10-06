@@ -40,6 +40,7 @@
     } catch { return []; }
   }
   function saveChats(chats) {
+    try { if (window.KulshSync) window.KulshSync.chatsChanged(chats); } catch {}
     try { localStorage.setItem(STORE_KEY, JSON.stringify(chats)); } catch {}
   }
   function loadSettings() {
@@ -76,6 +77,7 @@
   }
   function saveSettings(s) {
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
+    try { if (window.KulshSync) window.KulshSync.settingsChanged(s); } catch {}
   }
 
   // ============================================================
@@ -1571,7 +1573,25 @@
   // ============================================================
   // INIT
   // ============================================================
-  function init() {
+  // Перечитывает чаты и настройки из localStorage после синхронизации с аккаунтом.
+  function reloadFromStorage() {
+    if (AppState.isStreaming) return;
+    AppState.chats = loadChats();
+    AppState.settings = loadSettings();
+    if (!getActiveChat()) AppState.activeChatId = AppState.chats[0] ? AppState.chats[0].id : null;
+    applySettingsToDOM();
+    renderChatList(el.chatSearch ? el.chatSearch.value : undefined);
+    renderMessages();
+    renderModelPicker();
+  }
+
+  async function init() {
+    if (window.KulshSync) {
+      try { await window.KulshSync.start(); } catch {}
+      AppState.chats = loadChats();
+      AppState.settings = loadSettings();
+    }
+    window.addEventListener('kulsh-synced', reloadFromStorage);
     applySettingsToDOM();
     setupSpeechRecognition();
     populateVoiceList();

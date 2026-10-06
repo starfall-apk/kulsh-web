@@ -13,7 +13,7 @@
       none: 'Вход пока не настроен. Владелец сайта: см. README.',
       logout: 'Выйти', via: 'Вход через', popup: 'Разреши всплывающие окна и попробуй ещё раз.',
       cTitle: 'Добро пожаловать!', cSub: 'Прежде чем начать, ознакомься с тем, как работает Кульш и как мы обращаемся с данными.', cPolicy: 'Политика конфиденциальности',
-      cItems: ['Чаты и настройки хранятся в твоём браузере', 'Сообщения отправляются нейросети Gemini для ответа', 'При входе мы получаем только имя и аватар — без почты и паролей', 'Выйти и очистить данные можно в любой момент'],
+      cItems: ['Чаты и настройки сохраняются в твоём аккаунте и доступны на всех устройствах', 'Сообщения отправляются нейросети Gemini для ответа', 'При входе мы получаем только имя и аватар — без почты и паролей', 'Выйти и очистить данные можно в любой момент'],
       cText: 'Нажимая «Принять», ты соглашаешься с', cAccept: 'Принять', cLater: 'Не сейчас', lockedModel: 'Нужен вход', lockedFeature: 'Эта функция доступна после входа.',
       errors: { provider_off: 'Этот способ входа отключён.', state: 'Сессия входа устарела. Попробуй ещё раз.', bad_signature: 'Telegram не подтвердил вход.', failed: 'Не удалось войти. Попробуй ещё раз.', cancelled: 'Вход отменён.' },
     },
@@ -25,7 +25,7 @@
       none: 'Sign-in is not configured yet. Site owner: see README.',
       logout: 'Sign out', via: 'Signed in with', popup: 'Allow pop-ups and try again.',
       cTitle: 'Welcome!', cSub: 'Before you start, here is how Kulsh works and how we handle your data.', cPolicy: 'Privacy Policy',
-      cItems: ['Chats and settings are stored in your browser', 'Messages are sent to Gemini to generate replies', 'Signing in gives us only your name and avatar — no email or passwords', 'You can sign out and clear your data at any time'],
+      cItems: ['Chats and settings are saved to your account and available on all your devices', 'Messages are sent to Gemini to generate replies', 'Signing in gives us only your name and avatar — no email or passwords', 'You can sign out and clear your data at any time'],
       cText: 'By tapping “Accept” you agree to the', cAccept: 'Accept', cLater: 'Not now', lockedModel: 'Sign-in required', lockedFeature: 'This feature is available after signing in.',
       errors: { provider_off: 'This sign-in method is disabled.', state: 'Sign-in session expired. Try again.', bad_signature: 'Telegram did not confirm the sign-in.', failed: 'Could not sign in. Try again.', cancelled: 'Sign-in cancelled.' },
     },
@@ -129,7 +129,7 @@
     dlg.innerHTML = h;
     dlg.querySelector('#authClose').onclick = close;
     const lo = dlg.querySelector('#authLogout');
-    if (lo) lo.onclick = async () => { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} A.user = null; store.set(USER_KEY, null); changed(); close(); };
+    if (lo) lo.onclick = async () => { try { if (window.KulshSync) await window.KulshSync.onLogout(); } catch {} try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} A.user = null; store.set(USER_KEY, null); changed(); close(); };
     dlg.querySelectorAll('.auth-btn').forEach((b) => b.addEventListener('click', () => signIn(b.dataset.p, b)));
     renderAccountBtn();
   }
