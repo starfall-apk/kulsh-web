@@ -70,8 +70,7 @@
   --font-display: "Google Sans Flex Round", "Roboto Flex", system-ui, sans-serif;
   --font-body: "Google Sans Flex", "Roboto Flex", system-ui, sans-serif;
   --font-mono: "Google Sans Code", "Roboto Mono", ui-monospace, "SF Mono", Consolas, monospace;
-  /* Стек для Material Symbols: сначала Google (все лигатуры), потом локальный subset. */
-  --font-icons: "Material Symbols Rounded", "Material Symbols Rounded Local";
+  --font-icons: "Material Symbols Rounded";
 
   --chat-font-size: 16px;
 
@@ -874,7 +873,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
 }
 /* Fixed white check with drop-shadow — видно на любом цвете свотча,
    никакого mix-blend-mode: difference (который давал рандомные цвета).
-   font-family — стек иконок: Google первым, локальный subset вторым. */
+   font-family — шрифт иконок. */
 .swatch.is-active::after {
   content: "check";
   font-family: var(--font-icons);

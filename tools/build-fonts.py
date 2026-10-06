@@ -7,12 +7,11 @@
     pip install fonttools brotli
     python3 tools/build-fonts.py ./node_modules
 
-Чтобы добавить новую иконку — допиши её имя в ICONS и запусти скрипт ещё раз.
+Иконки добавлять не нужно: в шрифте уже весь набор Material Symbols Rounded.
 """
 import shutil, sys, os
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
-from fontTools import subset
 
 NM = sys.argv[1] if len(sys.argv) > 1 else './node_modules'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'fonts')
@@ -30,39 +29,12 @@ COPY = {
 for src, dst in COPY.items():
     shutil.copy(os.path.join(FS, src), os.path.join(OUT, dst))
 
-# --- Material Symbols Rounded: оставляем только нужные иконки и оси FILL (0..1) и wght (300..600)
-ICONS = """
-account_balance_wallet add arrow_back arrow_forward arrow_upward attach_file bolt chat_bubble check checklist close
-code contrast content_copy dark_mode data_object delete description dock_to_left dock_to_right done_all error
-expand_more favorite flash_on folder_zip forum functions image lightbulb light_mode mic payments person refresh
-replay search settings speed stars stop stop_circle volume_up auto_awesome
-""".split()
+# --- Material Symbols Rounded: ПОЛНЫЙ набор иконок (все лигатуры), без subset.
+# Берём variable-шрифт, фиксируем GRAD=0, opsz=24, wght=400, оставляем ось FILL (0..1) -> ~0.5 МБ woff2.
+# Источник: npm-пакет material-symbols (material-symbols-rounded.woff2) ИЛИ файл
+# MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf из github.com/google/material-design-icons/variablefont
 f = TTFont(os.path.join(NM, 'material-symbols', 'material-symbols-rounded.woff2'))
-f = instancer.instantiateVariableFont(f, {'GRAD': 0, 'opsz': 24, 'wght': (300, 600)})
-import io
-_b = io.BytesIO(); f.save(_b); _b.seek(0); f = TTFont(_b)  # перезагрузка: иначе subsetter путается в glyf-вариациях
-# Оставляем в GSUB только лигатуры нужных иконок, иначе subsetter тянет все ~3500 глyphов
-cmap = f.getBestCmap()
-wanted = {tuple(cmap[ord(ch)] for ch in name) for name in ICONS}
-for lookup in f['GSUB'].table.LookupList.Lookup:
-    for st in lookup.SubTable:
-        st = getattr(st, 'ExtSubTable', st)
-        if getattr(st, 'LookupType', None) is None and not hasattr(st, 'ligatures'):
-            continue
-        if hasattr(st, 'ligatures'):
-            for first in list(st.ligatures):
-                st.ligatures[first] = [l for l in st.ligatures[first] if (first,) + tuple(l.Component) in wanted]
-                if not st.ligatures[first]:
-                    del st.ligatures[first]
-opts = subset.Options()
-opts.layout_features = ['liga', 'rlig', 'calt', 'ccmp']
-opts.flavor = 'woff2'
-opts.glyph_names = False
-opts.notdef_outline = True
-opts.name_IDs = [1, 2]
-sub = subset.Subsetter(opts)
-sub.populate(text=' ' + ' '.join(ICONS) + ' ' + ''.join(sorted(set(''.join(ICONS)))))
-sub.subset(f)
+f = instancer.instantiateVariableFont(f, {'GRAD': 0, 'opsz': 24, 'wght': 400, 'FILL': (0, 1)})
 f.flavor = 'woff2'
 f.save(os.path.join(OUT, 'material-symbols-rounded.woff2'))
 
