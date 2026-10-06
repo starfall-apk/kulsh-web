@@ -70,6 +70,8 @@
   --font-display: "Google Sans Flex Round", "Roboto Flex", system-ui, sans-serif;
   --font-body: "Google Sans Flex", "Roboto Flex", system-ui, sans-serif;
   --font-mono: "Google Sans Code", "Roboto Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  /* Стек для Material Symbols: сначала локальное подмножество, потом полный шрифт из Google. */
+  --font-icons: "Material Symbols Rounded Local", "Material Symbols Rounded";
 
   --chat-font-size: 16px;
 
@@ -708,15 +710,28 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
    потому что у кнопки два класса — .icon-btn и .composer-send. В auth.css
    (.icon-btn { background: none; color: on-surface-variant }) идёт ПОСЛЕ
    styles.css, при равной специфичности (0,1,0) перебивает цвет и фон.
-   ID-селектор выигрывает у любых классов, поэтому кнопка снова фиолетовая. */
+   ID-селектор выигрывает у любых классов, поэтому кнопка снова фиолетовая.
+   На hover стрелка становится светлой (--md-on-surface, почти белая) —
+   транзишена на color нет, поэтому смена мгновенная, как в оригинале. */
 #sendBtn {
   background: var(--md-primary);
   color: var(--md-on-primary);
   transition: background var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
-#sendBtn:hover { background: color-mix(in srgb, var(--md-primary) 88%, black); color: var(--md-on-primary); }
-#sendBtn:active { background: color-mix(in srgb, var(--md-primary) 78%, black); }
-#sendBtn.is-stop { background: var(--md-error); color: var(--md-surface); }
+#sendBtn:hover {
+  background: color-mix(in srgb, var(--md-primary) 88%, black);
+  color: var(--md-on-surface);
+}
+#sendBtn:active {
+  background: color-mix(in srgb, var(--md-primary) 78%, black);
+  color: var(--md-on-surface);
+}
+#sendBtn.is-stop,
+#sendBtn.is-stop:hover,
+#sendBtn.is-stop:active {
+  background: var(--md-error);
+  color: var(--md-surface);
+}
 
 .composer-mic.is-listening { color: var(--md-error); animation: micPulse 1.4s ease-in-out infinite; }
 @keyframes micPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
@@ -845,10 +860,11 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
     0 0 0 4px var(--md-primary);
 }
 /* Fixed white check with drop-shadow — видно на любом цвете свотча,
-   никакого mix-blend-mode: difference (который давал рандомные цвета). */
+   никакого mix-blend-mode: difference (который давал рандомные цвета).
+   font-family — стек иконок: локальное подмножество, потом Google-фолбэк. */
 .swatch.is-active::after {
   content: "check";
-  font-family: "Material Symbols Rounded";
+  font-family: var(--font-icons);
   font-variation-settings: 'FILL' 1, 'wght' 600;
   font-size: 18px;
   position: absolute; inset: 0;
@@ -1090,7 +1106,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
 }
 .msg-stopped::before {
   content: "stop_circle";
-  font-family: "Material Symbols Rounded";
+  font-family: var(--font-icons);
   font-size: 13px;
   font-variation-settings: 'wght' 400, 'FILL' 0;
   opacity: .75;
