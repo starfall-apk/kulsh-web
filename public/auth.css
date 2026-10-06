@@ -1,0 +1,106 @@
+/* auth.css — диалоги входа и согласия (общий для чата и донатов) */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 20px; border-radius: var(--r-full);
+  font-size: .875rem; font-weight: 500;
+  transition: background var(--dur-s) var(--ease-standard), box-shadow var(--dur-s), opacity var(--dur-s);
+}
+.btn .material-symbols-rounded { font-size: 20px; }
+.btn-filled { background: var(--md-primary); color: var(--md-on-primary); }
+.btn-filled:hover { box-shadow: 0 2px 10px color-mix(in srgb, var(--md-primary) 40%, transparent); }
+.btn-tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.btn-tonal:hover { background: color-mix(in srgb, var(--md-secondary-container) 80%, var(--md-on-secondary-container)); }
+.btn-danger { background: var(--md-error-container); color: var(--md-on-error-container); }
+.btn-danger:hover { background: color-mix(in srgb, var(--md-error-container) 78%, var(--md-error)); }
+
+/* ===== DIALOG / SETTINGS ===== */
+.dialog-backdrop {
+  position: fixed; inset: 0; z-index: 40; background: var(--md-scrim);
+  opacity: 0; visibility: hidden; transition: opacity var(--dur-m) var(--ease-standard), visibility var(--dur-m);
+}
+.dialog-backdrop.is-open { opacity: 1; visibility: visible; }
+
+.dialog {
+  position: fixed; z-index: 41;
+  top: 50%; left: 50%;
+  width: min(680px, 92vw); max-height: min(720px, 86vh);
+  background: var(--md-surface-container-high);
+  border-radius: var(--r-lg);
+  box-shadow: 0 24px 60px var(--md-shadow);
+  display: flex; flex-direction: column; overflow: hidden;
+  opacity: 0; visibility: hidden;
+  transform: translate(-50%, -46%) scale(.96);
+  transition: opacity var(--dur-m) var(--ease-emphasized), transform var(--dur-m) var(--ease-emphasized), visibility var(--dur-m);
+  will-change: transform, opacity;
+}
+.dialog.is-open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+
+/* ===== AUTH ===== */
+.auth-dialog { width: min(420px, 92vw); padding: 28px 24px 22px; overflow: hidden auto; gap: 16px; }
+.auth-glow { position: absolute; inset: -80px -40px auto; height: 220px; pointer-events: none; z-index: 0;
+  background: radial-gradient(60% 70% at 50% 0%, color-mix(in srgb, var(--md-primary) 32%, transparent), transparent 70%); }
+.auth-dialog > *:not(.auth-glow) { position: relative; z-index: 1; }
+.auth-dialog > .auth-close { position: absolute; top: 10px; right: 10px; z-index: 5; }
+.auth-close svg { display: block; pointer-events: none; }
+.auth-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding-top: 6px; }
+.auth-hero h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 650; margin: 8px 0 0; }
+.auth-hero p { color: var(--md-on-surface-variant); font-size: .9rem; margin: 0; }
+.auth-logo { width: 64px; height: 64px; object-fit: contain; animation: authPop .5s var(--ease-emphasized) both; }
+@keyframes authPop { from { transform: scale(.7) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.auth-buttons { display: flex; flex-direction: column; gap: 10px; }
+.auth-btn { display: flex; align-items: center; justify-content: center; gap: 12px; height: 52px; border-radius: var(--r-full);
+  background: var(--md-surface-container-highest, var(--md-surface-container)); color: var(--md-on-surface);
+  border: 1px solid color-mix(in srgb, var(--md-on-surface) 14%, transparent);
+  font-size: .95rem; font-weight: 500; cursor: pointer;
+  transition: transform var(--dur-s) var(--ease-standard), background var(--dur-s), border-color var(--dur-s), box-shadow var(--dur-s); }
+.auth-btn:hover { transform: translateY(-1px); border-color: var(--md-primary); box-shadow: 0 6px 18px color-mix(in srgb, var(--md-primary) 22%, transparent); }
+.auth-btn:active { transform: scale(.98); }
+.auth-btn.is-busy { opacity: .6; pointer-events: none; }
+.auth-btn svg { flex-shrink: 0; }
+.auth-perks { display: grid; gap: 6px; padding: 14px 16px; border-radius: var(--r-md, 18px); background: color-mix(in srgb, var(--md-primary) 9%, transparent); font-size: .85rem; }
+.auth-perks b { font-family: var(--font-mono, inherit); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--md-primary); margin-bottom: 2px; }
+.auth-perks div { display: flex; align-items: center; gap: 8px; }
+.auth-perks svg { color: var(--md-primary); flex-shrink: 0; }
+.auth-guest { display: flex; gap: 8px; align-items: flex-start; font-size: .78rem; color: var(--md-on-surface-variant); }
+.auth-guest svg { flex-shrink: 0; margin-top: 1px; }
+.auth-note { padding: 10px 14px; border-radius: 14px; background: var(--md-error-container); color: var(--md-on-error-container); font-size: .85rem; text-align: center; }
+.auth-av { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; }
+.av-fallback { display: inline-flex; align-items: center; justify-content: center; background: var(--md-primary-container); color: var(--md-on-primary-container); font-weight: 600; }
+.auth-av.av-fallback { font-size: 2rem; }
+.auth-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: .78rem; background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.auth-chip svg { width: 16px; height: 16px; }
+.auth-logout { width: 100%; }
+.account-btn .account-ic { display: inline-flex; color: var(--md-on-surface-variant); }
+.account-btn:hover .account-ic { color: var(--md-primary); }
+.account-av { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; font-size: .75rem; }
+.account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Гость: ограничения интерфейса */
+.model-option.is-locked { opacity: .55; }
+.model-option .lock { margin-left: auto; display: inline-flex; color: var(--md-on-surface-variant); }
+:root[data-guest="on"] .new-chat-btn,
+:root[data-guest="on"] .composer-attach { opacity: .5; }
+:root[data-guest="on"] #defaultModelSelect,
+:root[data-guest="on"] #tempRange,
+:root[data-guest="on"] #customPrompt { pointer-events: none; opacity: .45; }
+
+/* donate / standalone header */
+.account-btn { display: inline-flex; align-items: center; gap: 8px; }
+.donate-header .account-btn { margin-left: auto; height: 40px; padding: 0 12px 0 8px; border-radius: 999px; font-size: .85rem; font-weight: 500; color: var(--md-on-surface); max-width: 180px; }
+.donate-header .account-btn:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+.donate-header .account-btn + .brand { margin-left: 0; }
+/* consent */
+.consent-dialog { width: min(440px, 92vw); padding: 30px 26px 24px; gap: 14px; align-items: center; text-align: center; overflow: hidden auto; }
+.consent-dialog > * { position: relative; z-index: 1; }
+.consent-dialog .auth-glow { position: absolute; z-index: 0; }
+.consent-logo { width: 72px; height: 72px; object-fit: contain; animation: authPop .5s var(--ease-emphasized) both; }
+.consent-dialog h2 { font-family: var(--font-display); font-size: 1.35rem; font-weight: 650; }
+.consent-dialog p { color: var(--md-on-surface-variant); font-size: .9rem; line-height: 1.5; }
+.consent-list { display: grid; gap: 8px; width: 100%; text-align: left; padding: 14px 16px; border-radius: 18px; background: color-mix(in srgb, var(--md-primary) 9%, transparent); font-size: .85rem; }
+.consent-list div { display: flex; gap: 10px; align-items: flex-start; }
+.consent-list svg { color: var(--md-primary); flex-shrink: 0; margin-top: 1px; }
+.consent-dialog a { color: var(--md-primary); text-decoration: underline; text-underline-offset: 3px; }
+.consent-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 4px; }
+.consent-actions .btn { width: 100%; height: 48px; }
+.consent-later { height: 40px; color: var(--md-on-surface-variant); font-size: .85rem; border-radius: 999px; }
+.consent-later:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }

@@ -11,7 +11,10 @@
       perksTitle: 'После входа', perks: ['Все модели Gemini', 'Новые чаты и история', 'Фото и файлы во вложениях', 'Свои инструкции и креативность'],
       guest: 'Без входа: только Gemini 3.5 Flash Lite, один чат, без вложений.',
       none: 'Вход пока не настроен. Владелец сайта: см. README.',
-      logout: 'Выйти', via: 'Вход через', lockedModel: 'Нужен вход', lockedFeature: 'Эта функция доступна после входа.',
+      logout: 'Выйти', via: 'Вход через', popup: 'Разреши всплывающие окна и попробуй ещё раз.',
+      cTitle: 'Добро пожаловать!', cSub: 'Прежде чем начать, ознакомься с тем, как работает Кульш и как мы обращаемся с данными.', cPolicy: 'Политика конфиденциальности',
+      cItems: ['Чаты и настройки хранятся в твоём браузере', 'Сообщения отправляются нейросети Gemini для ответа', 'При входе мы получаем только имя и аватар — без почты и паролей', 'Выйти и очистить данные можно в любой момент'],
+      cText: 'Нажимая «Принять», ты соглашаешься с', cAccept: 'Принять', cLater: 'Не сейчас', lockedModel: 'Нужен вход', lockedFeature: 'Эта функция доступна после входа.',
       errors: { provider_off: 'Этот способ входа отключён.', state: 'Сессия входа устарела. Попробуй ещё раз.', bad_signature: 'Telegram не подтвердил вход.', failed: 'Не удалось войти. Попробуй ещё раз.', cancelled: 'Вход отменён.' },
     },
     en: {
@@ -20,7 +23,10 @@
       perksTitle: 'After signing in', perks: ['All Gemini models', 'New chats and history', 'Photo and file attachments', 'Custom instructions and creativity'],
       guest: 'Signed out: Gemini 3.5 Flash Lite only, one chat, no attachments.',
       none: 'Sign-in is not configured yet. Site owner: see README.',
-      logout: 'Sign out', via: 'Signed in with', lockedModel: 'Sign-in required', lockedFeature: 'This feature is available after signing in.',
+      logout: 'Sign out', via: 'Signed in with', popup: 'Allow pop-ups and try again.',
+      cTitle: 'Welcome!', cSub: 'Before you start, here is how Kulsh works and how we handle your data.', cPolicy: 'Privacy Policy',
+      cItems: ['Chats and settings are stored in your browser', 'Messages are sent to Gemini to generate replies', 'Signing in gives us only your name and avatar — no email or passwords', 'You can sign out and clear your data at any time'],
+      cText: 'By tapping “Accept” you agree to the', cAccept: 'Accept', cLater: 'Not now', lockedModel: 'Sign-in required', lockedFeature: 'This feature is available after signing in.',
       errors: { provider_off: 'This sign-in method is disabled.', state: 'Sign-in session expired. Try again.', bad_signature: 'Telegram did not confirm the sign-in.', failed: 'Could not sign in. Try again.', cancelled: 'Sign-in cancelled.' },
     },
   };
@@ -38,14 +44,23 @@
   };
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  const USER_KEY = 'kulsh.user.v1', CONSENT_KEY = 'kulsh.privacy.v1', POLICY_VER = '2026-10';
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+  };
+  const cachedUser = () => { try { return JSON.parse(store.get(USER_KEY)); } catch { return null; } };
+  const hasConsent = () => store.get(CONSENT_KEY) === POLICY_VER;
+
   const A = (window.KulshAuth = {
-    GUEST_MODEL, ICON, user: null, providers: {}, telegramBotId: null, loaded: false,
+    GUEST_MODEL, ICON, user: cachedUser(), providers: {}, telegramBotId: null, loaded: false,
     get guest() { return !this.user; },
     t: () => tr(),
     open, close,
     toast(msg) { open(msg || tr().lockedFeature); },
   });
 
+  document.documentElement.dataset.guest = A.user ? 'off' : 'on';
   let tgLoading = null;
   function loadTelegram() {
     if (window.Telegram && window.Telegram.Login) return Promise.resolve();
@@ -64,16 +79,17 @@
   const dlg = document.createElement('div');
   dlg.className = 'dialog auth-dialog'; dlg.id = 'authDialog';
   dlg.setAttribute('role', 'dialog'); dlg.setAttribute('aria-modal', 'true');
-  document.addEventListener('DOMContentLoaded', () => { document.body.append(backdrop, dlg); mountAccountBtn(); render(); });
+  document.addEventListener('DOMContentLoaded', () => { document.body.append(backdrop, dlg); mountAccountBtn(); render(); setTimeout(maybeConsent, 700); });
 
   let accountBtn = null;
   function mountAccountBtn() {
     const settings = document.getElementById('settingsBtn');
-    if (!settings) return;
+    const slot = document.getElementById('accountSlot');
+    if (!settings && !slot) return;
     accountBtn = document.createElement('button');
-    accountBtn.type = 'button'; accountBtn.className = 'sidebar-user account-btn'; accountBtn.id = 'accountBtn';
+    accountBtn.type = 'button'; accountBtn.className = (settings ? 'sidebar-user ' : '') + 'account-btn'; accountBtn.id = 'accountBtn';
     accountBtn.addEventListener('click', () => open());
-    settings.parentNode.insertBefore(accountBtn, settings);
+    if (settings) settings.parentNode.insertBefore(accountBtn, settings); else slot.replaceWith(accountBtn);
     renderAccountBtn();
   }
   function avatarHTML(u, cls) {
@@ -107,12 +123,13 @@
     dlg.innerHTML = h;
     dlg.querySelector('#authClose').onclick = close;
     const lo = dlg.querySelector('#authLogout');
-    if (lo) lo.onclick = async () => { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} A.user = null; changed(); close(); };
+    if (lo) lo.onclick = async () => { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} A.user = null; store.set(USER_KEY, null); changed(); close(); };
     dlg.querySelectorAll('.auth-btn').forEach((b) => b.addEventListener('click', () => signIn(b.dataset.p, b)));
     renderAccountBtn();
   }
 
   function open(notice) {
+    if (!A.user && !hasConsent() && !notice) return askConsent(() => open());
     render(typeof notice === 'string' ? notice : '');
     if (!A.user && A.providers.telegram) loadTelegram().catch(() => {});
     backdrop.classList.add('is-open'); dlg.classList.add('is-open');
@@ -123,26 +140,59 @@
 
   function changed() { render(); window.dispatchEvent(new CustomEvent('kulsh-auth')); }
 
-  async function signIn(p, btn) {
+  function signIn(p, btn) {
+    if (!hasConsent()) return askConsent(() => signIn(p, btn));
     if (p !== 'telegram') { location.href = `/api/auth/start/${p}`; return; }
-    try { await loadTelegram(); } catch { return render(tr().errors.failed); }
+    // Окно Telegram нужно открыть синхронно по клику, иначе браузер его заблокирует.
+    if (!(window.Telegram && window.Telegram.Login)) {
+      loadTelegram().then(() => open(tr().errors.failed), () => open(tr().errors.failed));
+      return;
+    }
+    if (!A.telegramBotId) return open(tr().errors.failed);
     btn.classList.add('is-busy');
-    window.Telegram.Login.auth({ bot_id: Number(A.telegramBotId) }, async (data) => {
-      btn.classList.remove('is-busy');
-      if (!data) return render(tr().errors.cancelled), open(tr().errors.cancelled);
-      try {
-        const r = await fetch('/api/auth/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-        const j = await r.json();
-        if (!r.ok || !j.user) throw new Error(j.error || 'failed');
-        A.user = j.user; changed(); close();
-      } catch (e) { open(tr().errors[e.message] || tr().errors.failed); }
-    });
+    try {
+      window.Telegram.Login.auth({ bot_id: Number(A.telegramBotId), request_access: 'write', lang: lang() }, async (data) => {
+        btn.classList.remove('is-busy');
+        if (!data) return open(tr().errors.cancelled);
+        try {
+          const r = await fetch('/api/auth/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          const j = await r.json();
+          if (!r.ok || !j.user) throw new Error(j.error || 'failed');
+          A.user = j.user; store.set(USER_KEY, JSON.stringify(j.user)); changed(); close();
+        } catch (e) { open(tr().errors[e.message] || tr().errors.failed); }
+      });
+    } catch { btn.classList.remove('is-busy'); open(tr().popup); }
+    setTimeout(() => btn.classList.remove('is-busy'), 120000);
   }
+
+  // ---------- согласие с политикой ----------
+  const cBackdrop = document.createElement('div'); cBackdrop.className = 'dialog-backdrop'; cBackdrop.style.zIndex = 60;
+  const cDlg = document.createElement('div'); cDlg.className = 'dialog consent-dialog'; cDlg.style.zIndex = 61;
+  cDlg.setAttribute('role', 'dialog'); cDlg.setAttribute('aria-modal', 'true');
+  document.addEventListener('DOMContentLoaded', () => document.body.append(cBackdrop, cDlg));
+  let afterConsent = null;
+  function askConsent(cb) {
+    const s = tr(); afterConsent = cb || null;
+    cDlg.innerHTML = `<div class="auth-glow"></div><img class="consent-logo" src="/assets/logo.png" alt="">
+      <h2>${s.cTitle}</h2><p>${s.cSub}</p>
+      <div class="consent-list">${s.cItems.map((x) => `<div>${ICON.check}<span>${x}</span></div>`).join('')}</div>
+      <p>${s.cText} <a href="/privacy/" target="_blank" rel="noopener">${s.cPolicy}</a>.</p>
+      <div class="consent-actions"><button type="button" class="btn btn-filled" id="cAccept">${s.cAccept}</button>
+      <button type="button" class="consent-later" id="cLater">${s.cLater}</button></div>`;
+    cBackdrop.classList.add('is-open'); cDlg.classList.add('is-open');
+    cDlg.querySelector('#cAccept').onclick = () => { store.set(CONSENT_KEY, POLICY_VER); hideConsent(); const f = afterConsent; afterConsent = null; if (f) f(); };
+    cDlg.querySelector('#cLater').onclick = () => { afterConsent = null; hideConsent(); };
+  }
+  function hideConsent() { cBackdrop.classList.remove('is-open'); cDlg.classList.remove('is-open'); }
+  function maybeConsent() { if (!hasConsent() && !location.pathname.startsWith('/privacy')) askConsent(); }
 
   // ---------- старт ----------
   A.ready = Promise.race([
     fetch('/api/auth/me', { cache: 'no-store' }).then((r) => r.json()).then((j) => {
       A.user = j.user; A.providers = j.providers || {}; A.telegramBotId = j.telegramBotId; A.loaded = true;
+      store.set(USER_KEY, j.user ? JSON.stringify(j.user) : null);
+      renderAccountBtn();
+      if (A.providers.telegram) loadTelegram().catch(() => {});
     }).catch(() => {}),
     new Promise((r) => setTimeout(r, 2500)),
   ]).then(() => {
@@ -153,5 +203,7 @@
       if (document.readyState !== 'loading') open(tr().errors[err] || tr().errors.failed);
     }
     document.documentElement.dataset.guest = A.user ? 'off' : 'on';
+    const fire = () => { renderAccountBtn(); if (!dlg.classList.contains('is-open')) render(); window.dispatchEvent(new CustomEvent('kulsh-auth')); };
+    if (document.readyState !== 'loading') fire(); else document.addEventListener('DOMContentLoaded', fire);
   });
 })();

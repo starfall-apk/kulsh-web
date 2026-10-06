@@ -18,6 +18,8 @@
 <link rel="preload" href="/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="/fonts/fonts.css" />
 
+<script>try{var s=JSON.parse(localStorage.getItem("kulshgpt.settings.v1")||"{}"),r=document.documentElement,t=s.theme||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";r.dataset.theme=t;r.dataset.accent=s.accent||"violet";r.lang=s.lang||"ru"}catch(e){}</script>
+<link rel="stylesheet" href="/auth.css" />
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.4/dist/lottie-player.js"></script>
 
@@ -377,6 +379,16 @@ input { font: inherit; color: inherit; }
   .donate-card { padding: 20px 16px; }
   .lottie-wrap { width: 132px; height: 132px; }
 }
+[data-animated-bg="off"] .bg-base,[data-animated-bg="off"] .bg-shine{animation:none!important}
+/* Accent variants — как в чате */ — user-selectable, override --md-primary family */
+:root[data-accent="violet"] {}
+:root[data-accent="rose"]   { --md-primary:#FF9BC6; --md-primary-container:#5C1339; --md-on-primary-container:#FFD9E6; }
+:root[data-theme="light"][data-accent="rose"]   { --md-primary:#B32869; --md-primary-container:#FFD9E6; --md-on-primary-container:#3E001C; }
+:root[data-accent="teal"]   { --md-primary:#7FD9D0; --md-primary-container:#00504A; --md-on-primary-container:#CFF6EE; }
+:root[data-theme="light"][data-accent="teal"]   { --md-primary:#00695F; --md-primary-container:#CFF6EE; --md-on-primary-container:#00201C; }
+:root[data-accent="amber"]  { --md-primary:#F3BB5C; --md-primary-container:#5A3F00; --md-on-primary-container:#FFE0A6; }
+:root[data-theme="light"][data-accent="amber"]  { --md-primary:#8A5A00; --md-primary-container:#FFE0A6; --md-on-primary-container:#2A1900; }
+
 </style>
 </head>
 <body>
@@ -390,10 +402,11 @@ input { font: inherit; color: inherit; }
 </div>
 
 <header class="donate-header">
-  <a class="icon-btn" href="/" aria-label="На главную">
+  <a class="icon-btn" href="/" aria-label="На главную" data-i18n-aria="back">
     <span class="material-symbols-rounded">arrow_back</span>
   </a>
-  <span class="title">Поддержать KulshGPT</span>
+  <span class="title" data-i18n="title">Поддержать KulshGPT</span>
+  <span id="accountSlot"></span>
   <div class="brand">
     <img src="/assets/logo.png" alt="KulshGPT" />
   </div>
@@ -411,14 +424,14 @@ input { font: inherit; color: inherit; }
         style="width:100%;height:100%;">
       </lottie-player>
     </div>
-    <h1>Поддержите Кульша</h1>
-    <p>Средства идут на оплату серверов, хостинга и расширение лимитов нейросети.</p>
+    <h1 data-i18n="h1">Поддержите Кульша</h1>
+    <p data-i18n="lead">Средства идут на оплату серверов, хостинга и расширение лимитов нейросети.</p>
   </section>
 
   <section class="donate-card">
     <div class="section-label">
       <span class="material-symbols-rounded">payments</span>
-      <span>1. Сумма поддержки</span>
+      <span data-i18n="s1">1. Сумма поддержки</span>
     </div>
 
     <div class="amount-grid" id="amountGrid">
@@ -429,13 +442,13 @@ input { font: inherit; color: inherit; }
     </div>
 
     <div class="custom-amount-wrap">
-      <input id="customAmount" class="custom-amount-input" type="number" value="100" min="10" placeholder="Другая сумма" />
+      <input id="customAmount" class="custom-amount-input" type="number" value="100" min="10" placeholder="Другая сумма" data-i18n-ph="other" />
       <span class="currency-sign">₽</span>
     </div>
 
     <div class="section-label">
       <span class="material-symbols-rounded">account_balance_wallet</span>
-      <span>2. Способ оплаты</span>
+      <span data-i18n="s2">2. Способ оплаты</span>
     </div>
 
     <div class="method-stack">
@@ -449,24 +462,53 @@ input { font: inherit; color: inherit; }
       </button>
 
       <button class="method-btn is-da" id="payDa" type="button">
-        <span class="recommended-badge">Рекомендуемый</span>
+        <span class="recommended-badge" data-i18n="rec">Рекомендуемый</span>
         <span class="method-icon"><span class="material-symbols-rounded">bolt</span></span>
         <span class="method-text">
           <span class="name">DonationAlerts</span>
-          <span class="sub">Карты РФ, СБП, ЮMoney, QIWI, Crypto</span>
+          <span class="sub" data-i18n="daSub">Карты РФ, СБП, ЮMoney, QIWI, Crypto</span>
         </span>
         <span class="material-symbols-rounded method-arrow">arrow_forward</span>
       </button>
     </div>
 
-    <p class="note">
+    <p class="note" data-i18n="note">
       При оплате Звёздами вас перенаправит в диалог с ботом, где он мгновенно выставит официальный инвойс Telegram Stars.
     </p>
   </section>
 
-  <p class="footer">© 2026 KulshGPT · Open Source</p>
+  <p class="footer">© 2026 KulshGPT · Open Source · <a href="/privacy/" style="color:inherit" data-i18n="priv">Политика конфиденциальности</a></p>
 </main>
 
+<script src="/auth.js"></script>
+<script>
+(function(){
+  var D={en:{"title": "Support KulshGPT", "h1": "Support Kulsh", "lead": "Funds go to servers, hosting and higher AI limits.", "s1": "1. Amount", "s2": "2. Payment method", "other": "Other amount", "rec": "Recommended", "daSub": "Russian cards, SBP, YooMoney, QIWI, crypto", "note": "When paying with Stars you will be redirected to the bot chat, which instantly issues an official Telegram Stars invoice.", "back": "Back to home", "priv": "Privacy Policy"}};
+  var ru={}; document.querySelectorAll('[data-i18n]').forEach(function(e){ru[e.dataset.i18n]=e.innerHTML.trim();});
+  ru.other='Другая сумма'; ru.back='На главную';
+  function lang(){try{return JSON.parse(localStorage.getItem('kulshgpt.settings.v1')).lang==='en'?'en':'ru'}catch(e){return 'ru'}}
+  window.donateLang=lang;
+  function apply(){
+    var l=lang(),T=l==='en'?D.en:ru; document.documentElement.lang=l;
+    document.querySelectorAll('[data-i18n]').forEach(function(e){if(T[e.dataset.i18n]!=null)e.innerHTML=T[e.dataset.i18n];});
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(e){e.placeholder=T[e.dataset.i18nPh];});
+    document.querySelectorAll('[data-i18n-aria]').forEach(function(e){e.setAttribute('aria-label',T[e.dataset.i18nAria]);});
+    document.title=(l==='en'?'Support KulshGPT':'Поддержать KulshGPT');
+    if(window.updateStars)window.updateStars();
+  }
+  function theme(){
+    try{var s=JSON.parse(localStorage.getItem('kulshgpt.settings.v1')||'{}'),t=s.theme||'dark';
+      if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+      var r=document.documentElement;r.dataset.theme=t;r.dataset.accent=s.accent||'violet';
+      r.dataset.animatedBg=s.animatedBg===false?'off':'on';
+      var m=document.querySelector('meta[name=theme-color]');if(m)m.content=getComputedStyle(document.body).backgroundColor;}catch(e){}
+  }
+  function all(){theme();apply();}
+  addEventListener('storage',all);
+  matchMedia('(prefers-color-scheme: light)').addEventListener&&matchMedia('(prefers-color-scheme: light)').addEventListener('change',theme);
+  document.addEventListener('DOMContentLoaded',all); if(document.readyState!=='loading')all();
+})();
+</script>
 <script>
 (function () {
   'use strict';
@@ -490,9 +532,13 @@ input { font: inherit; color: inherit; }
   var customInput = document.getElementById('customAmount');
   var starsSub = document.getElementById('starsSub');
 
+  var lastRub = 100;
+  window.updateStars = function () { updateStars(lastRub); };
   function updateStars(rubles) {
     var stars = Math.max(1, Math.ceil(rubles / RATE));
-    starsSub.textContent = 'Оплата ~' + stars + ' 🌟 через интерфейс Telegram';
+    var en = window.donateLang && window.donateLang() === 'en';
+    starsSub.textContent = en ? 'Pay ~' + stars + ' 🌟 via Telegram' : 'Оплата ~' + stars + ' 🌟 через интерфейс Telegram';
+    lastRub = rubles;
   }
 
   function syncPillsFromInput() {
