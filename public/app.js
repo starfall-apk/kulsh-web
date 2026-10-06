@@ -15,7 +15,7 @@
     { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      icon: 'auto_awesome', tone: 'rose', desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
   ];
 
-  // Уровни усилий — как в Claude. Влияют на дополнительные инструкции к системному промпту.
+  // Уровни усилий — как в Claude.
   const EFFORTS = [
     { id: 'low',    icon: 'bolt',       tone: 'sky'  },
     { id: 'medium', icon: 'balance',    tone: 'mint' },
@@ -301,7 +301,7 @@
   }
 
   // ============================================================
-  // MODEL PICKER  (+ раздел «Усилие»)
+  // MODEL PICKER (+ раздел «Усилие»)
   // ============================================================
   function renderModelPicker() {
     const chat = getActiveChat();
@@ -338,7 +338,6 @@
       el.modelPickerMenu.appendChild(opt);
     });
 
-    // --- Раздел «Усилие» ---
     const divider = document.createElement('div');
     divider.className = 'model-menu-section';
     divider.textContent = window.t('effort.title');
@@ -652,32 +651,30 @@
   }
 
   // ---------- Маскот-Моаи ----------
-  // Один SVG, три состояния: idle (стоит), think (глаза в сторону), oops (ошибка).
-  // Форма черепа — вытянутая, с плавным сужением книзу; отдельный надбровный валик,
-  // глубокие глазницы, длинный прямой нос-пилон и «стоический» рот.
-  // Трещины камня создают ощущение настоящей статуи, без «полоски робота».
+  // Скульптурный череп: плавно сужается книзу, отдельный надбровный валик,
+  // глубокие глазницы с зрачками, длинный прямой нос-пилон, «стоический» рот
+  // и несколько трещин камня. По сравнению с предыдущей версией нос сузили,
+  // а глаза чуть увеличили — статуя стала более «живой» и менее «роботной».
   function mascotSVG(state) {
     return '<svg class="mascot" data-state="' + state + '" viewBox="0 0 64 72" aria-hidden="true" focusable="false">'
       + '<ellipse class="mc-shade" cx="32" cy="69" rx="18" ry="2.2"/>'
       + '<path class="mc-drop" d="M52 10c-2.2 3.2-3.4 4.8-3.4 6.4a3.4 3.4 0 0 0 6.8 0c0-1.6-1.2-3.2-3.4-6.4z"/>'
       + '<g class="mc-head">'
-      // Тело головы: сужается к подбородку, слегка утолщено сверху.
       + '<path class="mc-body" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L52 42C52 48 50 52 46 55L45 66H19L18 55C14 52 12 48 12 42Z"/>'
-      // Верхняя световая засветка (блик на камне).
       + '<path class="mc-shade" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L50.5 15H13.5Z" opacity=".28"/>'
-      // Надбровный валик — «козырьком» над глазами. Это главная моаи-черта.
+      // Надбровный валик — «козырьком» над глазами.
       + '<path class="mc-ink" d="M12 21Q32 17 52 21L52.5 26Q32 22 11.5 26Z" opacity=".92"/>'
       + '<path class="mc-shade" d="M12 20.3Q32 16.5 52 20.3L52 21Q32 17.2 12 21Z" opacity=".5"/>'
-      // Глубокие глазницы + зрачки.
-      + '<g class="mc-eye"><ellipse class="mc-ink" cx="21.5" cy="32" rx="5.5" ry="3.4"/><circle class="mc-pupil" cx="21.5" cy="32" r="1.9"/><path class="mc-x" d="M18.3 29.4l6.4 5M24.7 29.4l-6.4 5"/></g>'
-      + '<g class="mc-eye"><ellipse class="mc-ink" cx="42.5" cy="32" rx="5.5" ry="3.4"/><circle class="mc-pupil" cx="42.5" cy="32" r="1.9"/><path class="mc-x" d="M39.3 29.4l6.4 5M45.7 29.4l-6.4 5"/></g>'
-      // Нос-пилон: длинный, прямой, с лёгкой тенью сбоку.
-      + '<path class="mc-ink" d="M28 26.5L36 26.5L37.5 48.5Q32 50.5 26.5 48.5Z" opacity=".9"/>'
-      + '<path class="mc-shade" d="M28.2 27L32 27L32 49.5Q29 49.4 26.5 48.5Z" opacity=".55"/>'
-      // Стоический рот (плюс «злой» рот для ошибки).
+      // Глаза чуть крупнее прежнего (rx 5.5→6, ry 3.4→3.8, зрачок 1.9→2.1).
+      + '<g class="mc-eye"><ellipse class="mc-ink" cx="21.5" cy="32" rx="6" ry="3.8"/><circle class="mc-pupil" cx="21.5" cy="32" r="2.1"/><path class="mc-x" d="M18 29.25l7 5.5M25 29.25l-7 5.5"/></g>'
+      + '<g class="mc-eye"><ellipse class="mc-ink" cx="42.5" cy="32" rx="6" ry="3.8"/><circle class="mc-pupil" cx="42.5" cy="32" r="2.1"/><path class="mc-x" d="M39 29.25l7 5.5M46 29.25l-7 5.5"/></g>'
+      // Нос стал заметно уже (верх 6 px вместо 8, низ 9 px вместо 11).
+      + '<path class="mc-ink" d="M29 26.5L35 26.5L36.5 48.5Q32 50.5 27.5 48.5Z" opacity=".9"/>'
+      + '<path class="mc-shade" d="M29.2 27L32 27L32 49.5Q29.8 49.4 27.5 48.5Z" opacity=".55"/>'
+      // Стоический рот + «злой» рот для ошибки.
       + '<rect class="mc-ink mc-mouth-ok" x="22" y="55.5" width="20" height="2.2" rx="1.1"/>'
       + '<path class="mc-line mc-mouth-bad" d="M22 57.5q2.5-3 5 0t5 0t5 0t5 0"/>'
-      // Трещины и текстура камня.
+      // Трещины камня.
       + '<path class="mc-line mc-crack" d="M30.5 3l-2.5 7 3.5 4-2 6" style="stroke-width:1.6"/>'
       + '<path class="mc-line" d="M45 13l-2 4 2 3.5" style="stroke-width:1.4;opacity:.55"/>'
       + '<path class="mc-line" d="M19.5 43l1.8 4-1 4" style="stroke-width:1.4;opacity:.55"/>'
@@ -1019,7 +1016,6 @@
     return { messages, hasOldMedia: oldMediaIdx.length > 0, canRecall: oldMediaIdx.length > 0 && !newMedia };
   }
 
-  // Подсказки усилий: аккуратно добавляются к кастомному промпту и не ломают его.
   function effortPrefix() {
     const e = AppState.settings.effort || 'medium';
     if (e === 'low')    return 'СТИЛЬ ОТВЕТА: отвечай кратко и по существу, без лишних деталей и вступлений.';
@@ -1354,7 +1350,6 @@
       AppState.settings.lang = btn.dataset.lang;
       saveSettings(AppState.settings);
       applySettingsToDOM();
-      // Мгновенно перевести динамически построенные куски (в т.ч. кнопку входа).
       window.dispatchEvent(new CustomEvent('kulsh-lang-change'));
       renderChatList(el.chatSearch.value);
       renderMessages();
