@@ -8,7 +8,15 @@
 <meta name="color-scheme" content="dark light" />
 <meta name="robots" content="noindex" />
 <link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/material-symbols-rounded.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts.css" />
 <link rel="stylesheet" href="/errors.css" />
+
 <script>
   try {
     var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
@@ -20,33 +28,76 @@
 </script>
 </head>
 <body>
-  <div class="lang-switch" id="langSwitch">
-    <button type="button" data-lang="ru">RU</button>
-    <button type="button" data-lang="en">EN</button>
-  </div>
 
-  <div class="card">
-    <img class="logo" src="/assets/logo.png" alt="KulshGPT" />
-    <div class="code">503</div>
-    <h1 id="title">Сервис временно недоступен</h1>
-    <p id="sub">Мы уже чиним. Загляни через пару минут — обычно мы возвращаемся быстро.</p>
-    <div class="actions">
-      <a class="btn btn-filled" href="/" id="back">Попробовать снова</a>
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer">
+    <div class="bg-base"></div>
+    <div class="bg-shine"></div>
+  </div>
+  <div class="bg-vignette"></div>
+</div>
+
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="KulshGPT">
+      <img src="/assets/logo.png" alt="KulshGPT" />
+      <span>KulshGPT</span>
+    </a>
+    <span class="spacer"></span>
+    <div class="lang-switch" id="langSwitch">
+      <button type="button" data-lang="ru">RU</button>
+      <button type="button" data-lang="en">EN</button>
     </div>
-  </div>
+  </header>
 
+  <main class="main">
+    <div class="card" role="dialog" aria-labelledby="pageTitle">
+      <div class="card-glow"></div>
+      <div class="card-body">
+        <div class="lottie is-empty" id="lottie" aria-hidden="true"></div>
+
+        <span class="code-badge"><span class="dot"></span>503 · Unavailable</span>
+        <h1 id="pageTitle">Сервис временно недоступен</h1>
+        <p class="lead" id="pageSub">Мы уже чиним — обычно возвращаемся через пару минут. Загляни чуть позже или напиши автору, если что-то важное.</p>
+
+        <div class="actions">
+          <a class="btn btn-filled" href="/" id="btnRetry">
+            <span class="material-symbols-rounded">refresh</span>
+            <span id="btnRetryLabel">Попробовать снова</span>
+          </a>
+          <a class="btn btn-tonal" href="https://t.me/lolfall" target="_blank" rel="noopener noreferrer" id="btnContact">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="11" fill="#29A9EB"/><path fill="#fff" d="M5.4 11.8l11.2-4.3c.5-.2 1 .1.8.9l-1.9 9c-.1.6-.5.8-1 .5l-2.8-2.1-1.4 1.3c-.1.2-.3.3-.6.3l.2-2.9 5.2-4.7c.2-.2 0-.3-.3-.1l-6.4 4-2.8-.9c-.6-.2-.6-.6.1-.9z"/></svg>
+            <span id="btnContactLabel">Написать автору</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>© 2026 KulshGPT</span>
+    <span class="divider">·</span>
+    <a href="https://github.com/starfall-apk/kulsh" target="_blank" rel="noopener noreferrer">Open Source</a>
+    <span class="divider">·</span>
+    <a href="https://t.me/lolfall" target="_blank" rel="noopener noreferrer">Telegram автора</a>
+  </footer>
+</div>
+
+<script src="/lottie.min.js"></script>
 <script>
 (function () {
   var T = {
     ru: {
       title: 'Сервис временно недоступен',
-      sub: 'Мы уже чиним. Загляни через пару минут — обычно мы возвращаемся быстро.',
-      back: 'Попробовать снова',
+      sub: 'Мы уже чиним — обычно возвращаемся через пару минут. Загляни чуть позже или напиши автору, если что-то важное.',
+      retry: 'Попробовать снова',
+      contact: 'Написать автору',
     },
     en: {
       title: 'Service temporarily unavailable',
-      sub: "We're on it. Check back in a couple of minutes — we usually recover fast.",
-      back: 'Try again',
+      sub: "We're on it — usually we recover within a couple of minutes. Check back soon or ping the author if it's urgent.",
+      retry: 'Try again',
+      contact: 'Contact author',
     },
   };
   function lang() {
@@ -58,9 +109,10 @@
   function apply() {
     var l = lang(), t = T[l];
     document.documentElement.lang = l;
-    document.getElementById('title').textContent = t.title;
-    document.getElementById('sub').textContent = t.sub;
-    document.getElementById('back').textContent = t.back;
+    document.getElementById('pageTitle').textContent = t.title;
+    document.getElementById('pageSub').textContent = t.sub;
+    document.getElementById('btnRetryLabel').textContent = t.retry;
+    document.getElementById('btnContactLabel').textContent = t.contact;
     Array.prototype.forEach.call(document.querySelectorAll('#langSwitch button'), function (b) {
       b.classList.toggle('is-active', b.dataset.lang === l);
     });
@@ -75,6 +127,20 @@
     apply();
   });
   apply();
+
+  window.addEventListener('DOMContentLoaded', function () {
+    var host = document.getElementById('lottie');
+    if (window.lottie && host) {
+      host.classList.remove('is-empty');
+      window.lottie.loadAnimation({
+        container: host,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: '/lotties/octopus.json',
+      });
+    }
+  });
 })();
 </script>
 </body>
