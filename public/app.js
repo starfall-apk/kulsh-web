@@ -18,12 +18,12 @@
   // Уровни усилий — как в Claude.
   const EFFORTS = [
     { id: 'low',    icon: 'bolt',       tone: 'sky'  },
-    { id: 'medium', icon: 'balance',    tone: 'mint' },
-    { id: 'high',   icon: 'psychology', tone: 'rose' },
+    { id: 'medium', icon: 'auto_awesome',    tone: 'mint' },
+    { id: 'high',   icon: 'speed', tone: 'rose' },
   ];
 
   // Маскот пустого чата — моаи (две версии анимации)
-  const LOTTIES = ['moai', 'moai2'];
+  const LOTTIES = ['moai', 'moai2', 'freedom', 'wine'];
 
   const ACCENTS = ['violet', 'rose', 'teal', 'amber'];
 
