@@ -724,7 +724,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
    в тёмной теме кнопка уходит в глубокий сочный фиолетовый.
 
      • тёмная тема: brightness(0.85) saturate(1.4) — темнее и насыщеннее.
-     • светлая:     brightness(1.12)              — светлее.
+     • светлая:     brightness(1.12)               — светлее.
    ========================================================================== */
 #sendBtn {
   background: var(--md-primary);
@@ -732,7 +732,7 @@ body.is-booting .boot-skeleton { pointer-events: auto; }
   transition: filter var(--dur-s), opacity var(--dur-s), transform var(--dur-s);
 }
 #sendBtn:hover  { filter: brightness(0.85) saturate(1.4); }
-#sendBtn:active { filter: brightness(0.75) saturate(1.5); }
+#sendBtn:active { filter: brightness(0.77) saturate(1.47); }
 
 :root[data-theme="light"] #sendBtn:hover  { filter: brightness(1.12); }
 :root[data-theme="light"] #sendBtn:active { filter: brightness(1.22); }
