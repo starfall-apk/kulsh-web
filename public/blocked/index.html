@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Недоступно в вашем регионе · KulshGPT</title>
+<meta name="theme-color" content="#141019" />
+<meta name="color-scheme" content="dark light" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="stylesheet" href="/errors.css" />
+<script>
+  try {
+    var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+    var t = s.theme || 'dark';
+    if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    document.documentElement.lang = s.lang || 'ru';
+  } catch (e) {}
+</script>
+</head>
+<body>
+  <div class="lang-switch" id="langSwitch">
+    <button type="button" data-lang="ru">RU</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>
+
+  <div class="card">
+    <img class="logo" src="/assets/logo.png" alt="KulshGPT" />
+    <div class="code" id="codeLabel">Доступ ограничен</div>
+    <h1 id="title">Недоступно в вашем регионе</h1>
+    <p id="sub">Сервис временно ограничивает доступ для пользователей из вашего региона.</p>
+    <p id="why">Ограничение связано с действующим законодательством Российской Федерации, регулирующим оказание цифровых услуг пользователям из отдельных юрисдикций.</p>
+    <div class="note" id="note">Если вы находитесь в Крыму, Севастополе, Херсонской, Запорожской области, ЛНР или ДНР и видите это сообщение — сработала неточность IP-геолокации. Мы знаем об этой проблеме и постепенно улучшаем определение региона.</div>
+  </div>
+
+<script>
+(function () {
+  var T = {
+    ru: {
+      code: 'Доступ ограничен',
+      title: 'Недоступно в вашем регионе',
+      sub: 'Сервис временно ограничивает доступ для пользователей из вашего региона.',
+      why: 'Ограничение связано с действующим законодательством Российской Федерации, регулирующим оказание цифровых услуг пользователям из отдельных юрисдикций.',
+      note: 'Если вы находитесь в Крыму, Севастополе, Херсонской, Запорожской области, ЛНР или ДНР и видите это сообщение — сработала неточность IP-геолокации. Мы знаем об этой проблеме и постепенно улучшаем определение региона.',
+    },
+    en: {
+      code: 'Access restricted',
+      title: 'Unavailable in your region',
+      sub: 'The service is temporarily unavailable to users from your region.',
+      why: 'The restriction is due to the current legislation of the Russian Federation regulating the provision of digital services to users from certain jurisdictions.',
+      note: "If you're in Crimea, Sevastopol, Kherson, Zaporozhye, LPR or DPR and see this message, it's due to an IP geolocation inaccuracy. We're aware of the issue and are improving region detection.",
+    },
+  };
+  function lang() {
+    try {
+      var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+      return s.lang === 'en' ? 'en' : 'ru';
+    } catch (e) { return document.documentElement.lang === 'en' ? 'en' : 'ru'; }
+  }
+  function apply() {
+    var l = lang(), t = T[l];
+    document.documentElement.lang = l;
+    document.getElementById('codeLabel').textContent = t.code;
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('sub').textContent = t.sub;
+    document.getElementById('why').textContent = t.why;
+    document.getElementById('note').textContent = t.note;
+    Array.prototype.forEach.call(document.querySelectorAll('#langSwitch button'), function (b) {
+      b.classList.toggle('is-active', b.dataset.lang === l);
+    });
+  }
+  document.getElementById('langSwitch').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    try {
+      var s = JSON.parse(localStorage.getItem('kulshgpt.settings.v1') || '{}');
+      s.lang = b.dataset.lang;
+      localStorage.setItem('kulshgpt.settings.v1', JSON.stringify(s));
+    } catch (err) {}
+    apply();
+  });
+  apply();
+})();
+</script>
+</body>
+</html>
