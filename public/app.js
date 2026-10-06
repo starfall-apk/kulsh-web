@@ -519,6 +519,88 @@
       + '<ul class="todo-list">' + rows + '</ul></div>';
   }
 
+  // ---------- Файлы от бота ----------
+  function parseFileAttrs(s) {
+    const attrs = {};
+    if (!s) return attrs;
+    const re = /([\w-]+)\s*=\s*"([^"]*)"/g;
+    let m;
+    while ((m = re.exec(s))) attrs[m[1].toLowerCase()] = m[2];
+    return attrs;
+  }
+
+  function fileIconName(name) {
+    const n = String(name || '').toLowerCase();
+    const ext = n.includes('.') ? n.split('.').pop() : '';
+    if (['zip','rar','7z','tar','gz','bz2','xz'].includes(ext)) return 'folder_zip';
+    if (['png','jpg','jpeg','gif','webp','svg','bmp','ico','avif'].includes(ext)) return 'image';
+    if (['json','xml','yaml','yml','toml'].includes(ext)) return 'data_object';
+    if (['md','txt','log','rst'].includes(ext)) return 'description';
+    if (['py','js','mjs','ts','tsx','jsx','html','htm','css','scss','java','go','rs','c','h','cpp','hpp','rb','php','sh','bash','zsh','sql'].includes(ext)) return 'code';
+    return 'description';
+  }
+
+  function formatBytes(n) {
+    const b = Math.max(0, n | 0);
+    if (b < 1024) return b + ' Б';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1).replace('.0', '') + ' КБ';
+    if (b < 1024 * 1024 * 1024) return (b / 1024 / 1024).toFixed(1).replace('.0', '') + ' МБ';
+    return (b / 1024 / 1024 / 1024).toFixed(2) + ' ГБ';
+  }
+
+  function buildFileCard(attrs, content) {
+    const name = (attrs.name || attrs.filename || 'file.txt').trim();
+    const encoding = ((attrs.encoding || 'text').toLowerCase() === 'base64') ? 'base64' : 'text';
+    const bytes = encoding === 'base64'
+      ? Math.floor((content.replace(/\s+/g, '').length * 3) / 4)
+      : new Blob([content]).size;
+    const icon = fileIconName(name);
+    const dlLabel = (AppState.settings.lang === 'en') ? 'Download' : 'Скачать';
+    return '<div class="file-card" data-name="' + escapeAttr(name) + '" data-encoding="' + encoding + '">'
+      + '<span class="file-card-icon material-symbols-rounded">' + icon + '</span>'
+      + '<div class="file-card-meta">'
+      +   '<span class="file-card-name">' + escapeHtml(name) + '</span>'
+      +   '<span class="file-card-size">' + formatBytes(bytes) + '</span>'
+      + '</div>'
+      + '<button type="button" class="file-card-dl">'
+      +   '<span class="material-symbols-rounded">download</span>'
+      +   '<span>' + dlLabel + '</span>'
+      + '</button>'
+      + '<textarea class="file-card-content" hidden>' + escapeHtml(content) + '</textarea>'
+      + '</div>';
+  }
+
+  function downloadFileCard(card) {
+    if (!card) return;
+    const name = card.dataset.name || 'file';
+    const encoding = card.dataset.encoding;
+    const ta = card.querySelector('.file-card-content');
+    const content = ta ? ta.value : '';
+    let blob;
+    try {
+      if (encoding === 'base64') {
+        const clean = content.replace(/\s+/g, '');
+        const bin = atob(clean);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        blob = new Blob([bytes], { type: 'application/octet-stream' });
+      } else {
+        blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      }
+    } catch (e) {
+      console.error('[file] decode failed', e);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
   // ---------- Markdown ----------
   function renderMarkdown(text, opts) {
     opts = opts || {};
@@ -532,6 +614,18 @@
     const parts = text.split(/(```[\s\S]*?(?:```|$)|`[^`\n]+`)/);
     const out = parts.map((part, i) => {
       if (i % 2 === 0) return mathPass(part, i === parts.length - 1, opts, tok);
+
+      // 1) Блок файла: ```file name="..." encoding="..."
+      // Требуем закрывающий ```, иначе во время стрима показываем обычный код.
+      const fileM = part.match(/^```file\b([^\n]*)\n?([\s\S]*?)\n?```\s*$/i);
+      if (fileM) {
+        const attrs = parseFileAttrs(fileM[1]);
+        let body = fileM[2] || '';
+        if (body.endsWith('\n')) body = body.slice(0, -1);
+        return '\n\n' + tok(buildFileCard(attrs, body)) + '\n\n';
+      }
+
+      // 2) Блок чек-листа
       const fm = part.match(/^```[ \t]*(?:todo|checklist|tasks)\b[^\n]*\n?([\s\S]*?)(?:\n?```)?$/i);
       if (!fm) return part;
       const parsed = parseTodo(fm[1]);
@@ -651,10 +745,6 @@
   }
 
   // ---------- Маскот-Моаи ----------
-  // Скульптурный череп: плавно сужается книзу, отдельный надбровный валик,
-  // глубокие глазницы с зрачками, длинный прямой нос-пилон, «стоический» рот
-  // и несколько трещин камня. По сравнению с предыдущей версией нос сузили,
-  // а глаза чуть увеличили — статуя стала более «живой» и менее «роботной».
   function mascotSVG(state) {
     return '<svg class="mascot" data-state="' + state + '" viewBox="0 0 64 72" aria-hidden="true" focusable="false">'
       + '<ellipse class="mc-shade" cx="32" cy="69" rx="18" ry="2.2"/>'
@@ -662,19 +752,14 @@
       + '<g class="mc-head">'
       + '<path class="mc-body" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L52 42C52 48 50 52 46 55L45 66H19L18 55C14 52 12 48 12 42Z"/>'
       + '<path class="mc-shade" d="M14 9C14 3.5 18.5 1 25 1C30 1 34 1 39 1C45.5 1 50 3.5 50 9L50.5 15H13.5Z" opacity=".28"/>'
-      // Надбровный валик — «козырьком» над глазами.
       + '<path class="mc-ink" d="M12 21Q32 17 52 21L52.5 26Q32 22 11.5 26Z" opacity=".92"/>'
       + '<path class="mc-shade" d="M12 20.3Q32 16.5 52 20.3L52 21Q32 17.2 12 21Z" opacity=".5"/>'
-      // Глаза чуть крупнее прежнего (rx 5.5→6, ry 3.4→3.8, зрачок 1.9→2.1).
       + '<g class="mc-eye"><ellipse class="mc-ink" cx="21.5" cy="32" rx="6" ry="3.8"/><circle class="mc-pupil" cx="21.5" cy="32" r="2.1"/><path class="mc-x" d="M18 29.25l7 5.5M25 29.25l-7 5.5"/></g>'
       + '<g class="mc-eye"><ellipse class="mc-ink" cx="42.5" cy="32" rx="6" ry="3.8"/><circle class="mc-pupil" cx="42.5" cy="32" r="2.1"/><path class="mc-x" d="M39 29.25l7 5.5M46 29.25l-7 5.5"/></g>'
-      // Нос стал заметно уже (верх 6 px вместо 8, низ 9 px вместо 11).
       + '<path class="mc-ink" d="M29 26.5L35 26.5L36.5 48.5Q32 50.5 27.5 48.5Z" opacity=".9"/>'
       + '<path class="mc-shade" d="M29.2 27L32 27L32 49.5Q29.8 49.4 27.5 48.5Z" opacity=".55"/>'
-      // Стоический рот + «злой» рот для ошибки.
       + '<rect class="mc-ink mc-mouth-ok" x="22" y="55.5" width="20" height="2.2" rx="1.1"/>'
       + '<path class="mc-line mc-mouth-bad" d="M22 57.5q2.5-3 5 0t5 0t5 0t5 0"/>'
-      // Трещины камня.
       + '<path class="mc-line mc-crack" d="M30.5 3l-2.5 7 3.5 4-2 6" style="stroke-width:1.6"/>'
       + '<path class="mc-line" d="M45 13l-2 4 2 3.5" style="stroke-width:1.4;opacity:.55"/>'
       + '<path class="mc-line" d="M19.5 43l1.8 4-1 4" style="stroke-width:1.4;opacity:.55"/>'
@@ -1322,6 +1407,8 @@
     el.messages.addEventListener('click', (e) => {
       const item = e.target.closest('.todo-item');
       if (item) { toggleTodo(item); return; }
+      const dl = e.target.closest('.file-card-dl');
+      if (dl) { downloadFileCard(dl.closest('.file-card')); return; }
       const retry = e.target.closest('.error-retry');
       if (retry) {
         const node = retry.closest('.msg');
@@ -1501,6 +1588,9 @@
     }
 
     refreshAllSliderFills();
+
+    // Снимаем скелетон после того, как интерфейс полностью отрисован.
+    document.body.classList.remove('is-booting');
   }
 
   document.addEventListener('DOMContentLoaded', () => window.KulshAuth.ready.then(init, init).then(() => renderModelPicker()));
