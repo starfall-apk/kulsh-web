@@ -11,12 +11,15 @@ API-ключей Google Gemini при ошибках лимита (429).
 ```
 kulshgpt/
 ├── api/
-│   └── chat.js          ← серверная функция (Vercel Edge), обращается к Gemini API
+│   ├── chat.js          ← серверная функция (Vercel Edge), обращается к Gemini API
+│   ├── auth.js          ← вход через Google / GitHub / Telegram
+│   └── _session.js      ← подписанная cookie-сессия (без базы данных)
 ├── public/
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js            ← вся логика фронтенда
 │   ├── i18n.js            ← словарь RU/EN
+│   ├── auth.js            ← окно входа (Google / GitHub / Telegram), режим гостя
 │   ├── lottie.min.js      ← библиотека для анимаций (bundled, без CDN)
 │   ├── marked.min.js      ← Markdown-рендерер (bundled, без CDN)
 │   ├── assets/logo.png
@@ -46,6 +49,8 @@ kulshgpt/
 | `APIKEY4` | API-ключ Gemini участника команды №4  |
 | `APIKEY5` | API-ключ Gemini участника команды №5  |
 
+Переменные для входа (`AUTH_SECRET`, `TELEGRAM_BOT_TOKEN`, `GITHUB_*`, `GOOGLE_*`) — см. раздел «Вход через аккаунт» ниже.
+
 Ключи получаются в [Google AI Studio](https://aistudio.google.com/apikey) —
 каждый участник команды создаёт свой ключ на своём личном аккаунте Google.
 
@@ -57,6 +62,76 @@ kulshgpt/
 **Важно:** после добавления/изменения переменных окружения нужно сделать
 redeploy проекта (Vercel не подхватывает новые env-переменные "на лету"
 для уже собранного деплоя).
+
+## Вход через аккаунт (Google / GitHub / Telegram)
+
+Всё бесплатно, без базы данных и без почты. Сессия — подписанная HttpOnly-cookie
+(30 дней), в ней только id, имя и аватар из выбранного сервиса.
+
+**Что видит гость (без входа):** только `gemini-3.5-flash-lite`, один чат,
+без вложений, без своих инструкций и настройки креативности, контекст — последние
+20 сообщений. Это проверяется и на сервере (`api/chat.js`), а не только в интерфейсе.
+**После входа:** все модели, новые чаты, вложения, свои инструкции.
+
+Включай только те способы, что нужны: кнопка появляется, когда заполнены её переменные.
+После любых изменений переменных на Vercel сделай **Redeploy**.
+
+### 0. Общее (обязательно)
+
+| Переменная    | Значение |
+|---------------|----------|
+| `AUTH_SECRET` | Любая случайная строка от 32 символов. Получить: `openssl rand -base64 32` или в консоли браузера `crypto.randomUUID()+crypto.randomUUID()` |
+| `SITE_URL`    | *(необязательно)* Основной адрес, напр. `https://kulsh.vercel.app`. Нужен, если у сайта несколько доменов или он за прокси |
+
+Ниже `ТВОЙ-ДОМЕН` — адрес сайта без слэша на конце, например `kulsh.vercel.app`.
+
+### 1. Telegram (самый простой, ~2 минуты)
+
+1. В Telegram открой [@BotFather](https://t.me/BotFather) → `/newbot` → придумай имя и username → получишь **токен** вида `123456:ABC-DEF...`.
+2. Там же: `/setdomain` → выбери бота → отправь `ТВОЙ-ДОМЕН` (без `https://`).
+3. В Vercel добавь `TELEGRAM_BOT_TOKEN` = токен. Redeploy.
+
+Заметки: у бота один домен; `localhost` BotFather не принимает — для локальной
+разработки используй туннель (ngrok / cloudflared) и отдельного тестового бота.
+Токен никому не показывай (он только на сервере).
+
+### 2. GitHub (~3 минуты)
+
+1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Homepage URL: `https://ТВОЙ-ДОМЕН`
+   Authorization callback URL: `https://ТВОЙ-ДОМЕН/api/auth/callback/github`
+3. После создания скопируй **Client ID**, нажми **Generate a new client secret** и скопируй секрет.
+4. В Vercel: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`. Redeploy.
+
+У одного приложения один callback-URL. Для локальной разработки создай второе
+приложение с callback `http://localhost:3000/api/auth/callback/github`.
+
+### 3. Google (~5 минут)
+
+1. Открой [Google Cloud Console](https://console.cloud.google.com/) → создай проект (бесплатно, карта не нужна).
+2. **APIs & Services → OAuth consent screen** (в новом интерфейсе — *Google Auth Platform*): тип **External**, название приложения, твоя почта поддержки и контактная почта.
+3. Статус публикации переведи в **In production** (кнопка *Publish app* / раздел *Audience*). Для входа нужны только базовые данные профиля (`openid`, `profile`), поэтому проверка Google не требуется. Пока приложение в режиме *Testing*, войти смогут только добавленные тестовые пользователи.
+4. **Credentials → Create credentials → OAuth client ID → Web application**. В *Authorized redirect URIs* добавь:
+   `https://ТВОЙ-ДОМЕН/api/auth/callback/google`
+   (для локальной разработки можно добавить и `http://localhost:3000/api/auth/callback/google`).
+5. Скопируй **Client ID** и **Client secret** → в Vercel: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Redeploy.
+
+### Если что-то не работает
+
+| Симптом | Причина |
+|---------|---------|
+| Нет кнопки провайдера | Не заполнены его переменные или нет `AUTH_SECRET`; не сделан Redeploy |
+| `redirect_uri_mismatch` (Google) / «redirect_uri is not associated» (GitHub) | Callback в консоли сервиса не совпадает с `https://ТВОЙ-ДОМЕН/api/auth/callback/...` символ в символ; на превью-деплоях домен другой — задай `SITE_URL` или входи только на основном домене |
+| Telegram: «Bot domain invalid» | Не выполнен `/setdomain` или домен указан с `https://` |
+| Telegram-окно открывается и закрывается | Токен в `TELEGRAM_BOT_TOKEN` от другого бота, чем тот, которому задан домен |
+| «Сессия входа устарела» | Cookie блокируется браузером или прошло более 10 минут между нажатием и подтверждением |
+| Google: «Access blocked: app not verified» | Приложение в режиме *Testing* — переведи в *In production* |
+
+### Для тех, кто форкает репозиторий
+
+Создай **свои** приложения/бота по инструкциям выше и пропиши собственные переменные
+в своём проекте Vercel — чужие ключи и домены переиспользовать нельзя.
+Для локального запуска скопируй `.env.example` в `.env.local` и заполни.
 
 ## Модели
 
@@ -114,3 +189,6 @@ vercel dev
 - Формулы: KaTeX локально (`public/vendor/katex`), `$…$`, `$$…$$`, `\(…\)`, `\[…\]`, окружения `\begin{…}`.
 - Вложения уходят в модель только из текущего сообщения. Маркер `!recall_media` вырезается на сервере; если модель просит старые медиа, клиент один раз повторяет запрос с последними вложениями.
 - Удалены настройки аватарок, имён и стикера (всегда включены).
+
+## v3: авторизация
+- Вход через Google / GitHub / Telegram, режим гостя с ограничениями (проверяются на сервере), окно входа и карточка аккаунта в сайдбаре.

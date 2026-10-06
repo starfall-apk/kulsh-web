@@ -298,7 +298,8 @@
   // ============================================================
   function renderModelPicker() {
     const chat = getActiveChat();
-    const currentModelId = chat ? chat.model : AppState.settings.defaultModel;
+    const KA = window.KulshAuth;
+    const currentModelId = KA.guest ? KA.GUEST_MODEL : (chat ? chat.model : AppState.settings.defaultModel);
     const current = MODELS.find((m) => m.id === currentModelId) || MODELS[0];
     el.modelPickerName.textContent = current.name.replace(/^Gemini\s*/i, '');
     const chip = document.getElementById('emptyModel');
@@ -306,8 +307,9 @@
 
     el.modelPickerMenu.innerHTML = '';
     MODELS.forEach((m) => {
+      const locked = KA.guest && m.id !== KA.GUEST_MODEL;
       const opt = document.createElement('button');
-      opt.className = 'model-option' + (m.id === currentModelId ? ' is-selected' : '');
+      opt.className = 'model-option' + (m.id === currentModelId ? ' is-selected' : '') + (locked ? ' is-locked' : '');
       opt.setAttribute('role', 'option');
       const lang = AppState.settings.lang;
       opt.innerHTML = `
@@ -316,9 +318,10 @@
           <span class="model-option-name">${m.name}</span>
           <span class="model-option-desc">${m.desc[lang] || m.desc.ru}</span>
         </span>
-        ${m.id === currentModelId ? '<span class="material-symbols-rounded check">check</span>' : ''}
+        ${locked ? '<span class="lock">' + KA.ICON.lock + '</span>' : (m.id === currentModelId ? '<span class="material-symbols-rounded check">check</span>' : '')}
       `;
       opt.addEventListener('click', () => {
+        if (locked) { closeModelPicker(); KA.open(KA.t().lockedModel); return; }
         const c = getActiveChat();
         if (c) { c.model = m.id; saveChats(AppState.chats); }
         else { AppState.settings.defaultModel = m.id; saveSettings(AppState.settings); }
@@ -860,6 +863,7 @@
   }
 
   async function handleFiles(fileList) {
+    if (window.KulshAuth.guest) { window.KulshAuth.toast(); return; }
     for (const file of Array.from(fileList)) {
       if (file.size > 15 * 1024 * 1024) {
         alert(`${file.name}: файл слишком большой (макс. 15 МБ)`);
@@ -1020,9 +1024,9 @@
           signal: abort.signal,
           body: JSON.stringify({
             messages: payload.messages,
-            model: chat.model,
+            model: window.KulshAuth.guest ? window.KulshAuth.GUEST_MODEL : chat.model,
             temperature: AppState.settings.temperature,
-            customPrompt: AppState.settings.customPrompt || '',
+            customPrompt: window.KulshAuth.guest ? '' : (AppState.settings.customPrompt || ''),
             recall: recallPass,
             hasOldMedia: payload.hasOldMedia,
           }),
@@ -1240,7 +1244,9 @@
   // EVENT WIRING
   // ============================================================
   function wireEvents() {
+    window.addEventListener('kulsh-auth', () => { renderModelPicker(); renderChatList(); });
     el.newChatBtn.addEventListener('click', () => {
+      if (window.KulshAuth.guest) { window.KulshAuth.toast(); return; }
       createChat();
       renderChatList();
       renderMessages();
@@ -1258,7 +1264,7 @@
       if (!el.modelPicker.contains(e.target)) closeModelPicker();
     });
 
-    el.attachBtn.addEventListener('click', () => el.fileInput.click());
+    el.attachBtn.addEventListener('click', () => { if (window.KulshAuth.guest) return window.KulshAuth.toast(); el.fileInput.click(); });
     el.fileInput.addEventListener('change', (e) => {
       handleFiles(e.target.files);
       el.fileInput.value = '';
@@ -1475,5 +1481,5 @@
     refreshAllSliderFills();
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => window.KulshAuth.ready.then(init, init).then(() => renderModelPicker()));
 })();

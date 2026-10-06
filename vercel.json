@@ -1,13 +1,32 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/donate", "destination": "/donate/index.html" },
-    { "source": "/donate/", "destination": "/donate/index.html" }
+    {
+      "source": "/api/auth/:action/:provider",
+      "destination": "/api/auth?action=:action&provider=:provider"
+    },
+    {
+      "source": "/api/auth/:action",
+      "destination": "/api/auth?action=:action"
+    },
+    {
+      "source": "/donate",
+      "destination": "/donate/index.html"
+    },
+    {
+      "source": "/donate/",
+      "destination": "/donate/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/(fonts|vendor)/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

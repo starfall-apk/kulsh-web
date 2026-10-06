@@ -9,7 +9,13 @@
 // req.signal.aborted = true на сервере → мы отменяем upstream-запрос к Gemini
 // и закрываем стрим, не дожидаясь таймаута Vercel.
 
+import { readSession } from './_session.js';
+
 export const config = { runtime: 'edge' };
+
+// Гости: только эта модель, без вложений и кастомизации, короткая история.
+const GUEST_MODEL = 'gemini-3.5-flash-lite';
+const GUEST_MAX_MESSAGES = 20;
 
 const ALLOWED_MODELS = new Set([
   'gemini-2.5-flash',
@@ -185,7 +191,15 @@ export default async function handler(req) {
   let body;
   try { body = await req.json(); } catch { return sseError('Некорректный JSON в запросе.'); }
 
-  const { messages, model, temperature: rawTemp, customPrompt, recall, hasOldMedia } = body || {};
+  const user = await readSession(req);
+  const guest = !user;
+  let { messages, model, temperature: rawTemp, customPrompt, recall, hasOldMedia } = body || {};
+  if (guest) {
+    model = GUEST_MODEL; customPrompt = ''; rawTemp = 0.9; recall = false; hasOldMedia = false;
+    if (Array.isArray(messages)) {
+      messages = messages.slice(-GUEST_MAX_MESSAGES).map((m) => ({ ...m, attachments: [] }));
+    }
+  }
   const temperature = Math.min(1.5, Math.max(0, Number.isFinite(+rawTemp) ? +rawTemp : 0.9));
   const contents = Array.isArray(messages) ? toContents(messages) : [];
   if (!contents.length) return sseError('Пустой запрос — нет текста и вложений.');
@@ -209,7 +223,7 @@ export default async function handler(req) {
   const order = keys.map((_, i) => keys[(start + i) % keys.length]);
 
   const modelsToTry = [selectedModel];
-  if (selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
+  if (!guest && selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
 
   // ---- Обработка разрыва соединения клиентом (кнопка «стоп») ----
   // Когда фронт вызывает AbortController.abort(), Vercel получает разрыв и
