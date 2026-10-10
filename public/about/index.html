@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark" data-page="about">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>О Kulsh — открытый ИИ-ассистент</title>
+<meta name="description" content="О проекте Kulsh: что это, какие модели поддерживаются, как устроен и почему открытый." />
+<meta name="theme-color" content="#100D16" />
+<meta name="color-scheme" content="dark light" />
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-code-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/material-symbols-rounded-v2.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts-v2.css" />
+<link rel="stylesheet" href="/auth.css" />
+<link rel="stylesheet" href="/pages.css" />
+<script>try{var s=JSON.parse(localStorage.getItem("kulshgpt.settings.v1")||"{}"),r=document.documentElement,t=s.theme||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";r.dataset.theme=t;r.dataset.accent=s.accent||"violet";var lg=s.lang||((navigator.language||"ru").toLowerCase().indexOf("ru")===0?"ru":"en");r.lang=lg}catch(e){}</script>
+</head>
+<body>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer"><div class="bg-base"></div><div class="bg-shine"></div></div>
+  <div class="bg-vignette"></div>
+</div>
+
+<header class="mnav">
+  <div class="wrap mnav-inner">
+    <a class="mnav-brand" href="/"><img src="/assets/logo.png" alt="" /><span>Kulsh</span></a>
+    <nav class="mnav-links">
+      <a href="/" data-i18n="nav.home">Главная</a>
+      <a href="/about" class="is-active" data-i18n="nav.about">О Kulsh</a>
+      <a href="/docs" data-i18n="nav.api">API</a>
+    </nav>
+    <div class="mnav-spacer"></div>
+    <div class="mnav-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button class="mnav-icon" data-theme-toggle type="button" data-i18n-aria="nav.theme" aria-label="Сменить тему">
+        <span class="material-symbols-rounded">light_mode</span>
+      </button>
+      <span id="accountSlot"></span>
+      <a class="btn btn-filled btn-sm mnav-cta" href="/chat"><span class="material-symbols-rounded">chat</span><span data-i18n="nav.openChat">Открыть чат</span></a>
+    </div>
+    <details class="mnav-mobile">
+      <summary class="mnav-icon" data-i18n-aria="nav.menu" aria-label="Меню"><span class="material-symbols-rounded">menu</span></summary>
+      <div class="mm-panel">
+        <nav class="mm-nav">
+          <a href="/" data-i18n="nav.home">Главная</a>
+          <a href="/about" class="is-active" data-i18n="nav.about">О Kulsh</a>
+          <a href="/docs" data-i18n="nav.api">API</a>
+        </nav>
+        <div class="mm-controls">
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" data-lang="ru">RU</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
+          <button class="mnav-icon" data-theme-toggle type="button" data-i18n-aria="nav.theme" aria-label="Сменить тему">
+            <span class="material-symbols-rounded">light_mode</span>
+          </button>
+        </div>
+        <a class="btn btn-filled mm-cta" href="/chat"><span class="material-symbols-rounded">chat</span><span data-i18n="nav.openChat">Открыть чат</span></a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<section class="hero" style="padding:var(--sp-6) 0 var(--sp-5);">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="wrap hero-inner">
+    <div class="eyebrow" data-i18n="about.eyebrow">О проекте</div>
+    <h1 style="font-size:clamp(32px,5vw,56px);" data-i18n-html="about.h1">Что такое <span class="accent">Kulsh</span></h1>
+    <p class="hero-sub" data-i18n="about.sub">
+      Kulsh — открытый ИИ-ассистент и веб-чат: одна точка входа сразу к нескольким языковым моделям,
+      с голосом, вложениями, скиллами и историей в аккаунте. Проект делает небольшая команда, а код лежит в открытом доступе.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-filled" href="/chat" data-wave><span class="material-symbols-rounded">rocket_launch</span><span data-i18n="about.try">Попробовать</span></a>
+      <a class="btn btn-outline" href="https://github.com/starfall-apk/kulsh-web" target="_blank" rel="noopener noreferrer" data-wave>
+        <span class="material-symbols-rounded">code</span><span data-i18n="about.src">Исходники на GitHub</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section-sm">
+  <div class="wrap">
+    <div class="grid grid-2">
+      <article class="card reveal">
+        <div class="card-icon"><span class="material-symbols-rounded">psychology</span></div>
+        <h3 data-i18n="about.1.t">Одна модель — много характеров</h3>
+        <p data-i18n="about.1.d">Kulsh умеет подключаться к разным моделям: Gemini, DeepSeek, GLM и Kimi. Ты выбираешь, кому доверить задачу, а интерфейс остаётся тем же.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><span class="material-symbols-rounded">favorite</span></div>
+        <h3 data-i18n="about.2.t">Живой, а не канцелярский</h3>
+        <p data-i18n="about.2.d">Кульш общается по-дружески и по делу — без лишних нравоучений. Но всегда грамотно и по существу.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><span class="material-symbols-rounded">extension</span></div>
+        <h3 data-i18n="about.3.t">Скиллы</h3>
+        <p data-i18n="about.3.d">Наборы инструкций и знаний в формате markdown. Подключаются по требованию, поэтому не раздувают контекст.</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-icon"><span class="material-symbols-rounded">shield</span></div>
+        <h3 data-i18n="about.4.t">Приватность</h3>
+        <p data-i18n="about.4.d">Вход без паролей — через Google, GitHub или Telegram. В сессии только имя и аватар. Чаты синхронизируются по аккаунту.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section-sm">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" data-i18n="stack.eyebrow">Как устроено</div>
+      <h2 data-i18n="stack.h2">Под капотом</h2>
+      <p data-i18n="stack.p">Простой и предсказуемый стек без лишних зависимостей.</p>
+    </div>
+    <div class="panel reveal">
+      <div class="rows">
+        <div class="row">
+          <span class="row-dot dot-violet"></span>
+          <div class="row-main">
+            <div class="row-name" data-i18n="stack.1.t">Frontend</div>
+            <div class="row-desc" data-i18n="stack.1.d">Чистый HTML/CSS/JS в стиле Material Design 3, без сборщика. Светлая и тёмная темы, акценты, локальные шрифты и иконки.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="row-dot dot-mint"></span>
+          <div class="row-main">
+            <div class="row-name" data-i18n="stack.2.t">Backend</div>
+            <div class="row-desc" data-i18n="stack.2.d">Vercel Edge Functions: стриминг ответов, ротация API-ключей, проверка сессии и учёт лимитов.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="row-dot dot-sky"></span>
+          <div class="row-main">
+            <div class="row-name" data-i18n="stack.3.t">Хранилище</div>
+            <div class="row-desc" data-i18n="stack.3.d">История чатов, настройки и usage хранятся в Upstash Redis по аккаунту.</div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="row-dot dot-amber"></span>
+          <div class="row-main">
+            <div class="row-name" data-i18n="stack.4.t">Открытый код</div>
+            <div class="row-desc" data-i18n="stack.4.d">Проект можно форкнуть и поднять у себя: репозиторий starfall-apk/kulsh-web.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-sm">
+  <div class="wrap">
+    <div class="card reveal" style="text-align:center; padding:var(--sp-6) var(--sp-4);">
+      <h2 style="font-family:var(--font-display); font-size:clamp(24px,3vw,32px); font-weight:700;" data-i18n="about.join.h2">Присоединяйся</h2>
+      <p style="color:var(--md-on-surface-variant); margin:var(--sp-2) auto var(--sp-4); max-width:520px;" data-i18n="about.join.p">
+        Заходи в чат, пробуй модели и предлагай идеи — проект живой и открыт для правок.
+      </p>
+      <div class="hero-actions" style="margin-top:0;">
+        <a class="btn btn-filled" href="/chat"><span class="material-symbols-rounded">chat</span><span data-i18n="cta.chat">Открыть чат</span></a>
+        <a class="btn btn-outline" href="/docs" data-i18n="cta.docs">Документация API</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand"><img src="/assets/logo.png" alt="" /><span>Kulsh</span></div>
+    <nav class="footer-links">
+      <a href="/" data-i18n="foot.home">Главная</a>
+      <a href="/docs" data-i18n="foot.api">API</a>
+      <a href="/privacy" data-i18n="foot.privacy">Политика конфиденциальности</a>
+      <a href="/donate" data-i18n="foot.donate">Поддержать</a>
+    </nav>
+    <div class="footer-spacer"></div>
+    <div class="footer-note">© <span data-year>2026</span> Kulsh · <span data-i18n="foot.note">open-source</span></div>
+  </div>
+</footer>
+
+<script src="/auth.js"></script>
+<script src="/pages.js"></script>
+</body>
+</html>

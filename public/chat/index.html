@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
+<title>KulshAI — ИИ-ассистент</title>
+<meta name="description" content="KulshAI — быстрый ИИ-ассистент на базе Gemini с голосовым чатом, вложениями и гибкой настройкой." />
+<meta name="theme-color" content="#100D16" />
+<meta name="color-scheme" content="dark light" />
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<!-- Шрифты и иконки локальные: preload тянет их параллельно с HTML/CSS -->
+<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-code-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/material-symbols-rounded-v2.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts-v2.css" />
+
+<link rel="stylesheet" href="/vendor/katex/katex.min.css" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="stylesheet" href="/auth.css" />
+<script>try{var s=JSON.parse(localStorage.getItem("kulshgpt.settings.v1")||"{}"),r=document.documentElement,t=s.theme||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";r.dataset.theme=t;r.dataset.accent=s.accent||"violet";r.lang=s.lang||((navigator.language||"ru").toLowerCase().indexOf("ru")===0?"ru":"en")}catch(e){}</script>
+</head>
+<body class="is-booting">
+
+<!-- ============ BOOT SKELETON ============ -->
+<div class="boot-skeleton" aria-hidden="true">
+  <aside class="boot-sidebar">
+    <div class="sk sk-btn"></div>
+    <div class="sk sk-search"></div>
+    <div class="boot-chat-list">
+      <div class="sk sk-chat"></div>
+      <div class="sk sk-chat"></div>
+      <div class="sk sk-chat"></div>
+      <div class="sk sk-chat"></div>
+      <div class="sk sk-chat sk-short"></div>
+    </div>
+    <div class="boot-sidebar-bottom">
+      <div class="sk sk-user"></div>
+      <div class="sk sk-user"></div>
+      <div class="sk sk-user"></div>
+    </div>
+  </aside>
+  <main class="boot-main">
+    <div class="boot-topbar">
+      <div class="sk sk-chip"></div>
+    </div>
+    <div class="boot-hero">
+      <div class="sk sk-circle"></div>
+      <div class="sk sk-title"></div>
+      <div class="sk sk-sub"></div>
+      <div class="boot-cards">
+        <div class="sk sk-card"></div>
+        <div class="sk sk-card"></div>
+        <div class="sk sk-card"></div>
+        <div class="sk sk-card"></div>
+      </div>
+    </div>
+    <div class="boot-composer">
+      <div class="sk sk-input"></div>
+    </div>
+  </main>
+</div>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer">
+    <div class="bg-base"></div>
+    <div class="bg-shine"></div>
+  </div>
+  <div class="bg-vignette"></div>
+</div>
+
+<div class="app" id="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <button class="icon-btn sidebar-toggle" id="sidebarToggle" type="button" aria-label="Свернуть меню">
+        <span class="material-symbols-rounded">dock_to_right</span>
+      </button>
+      <button class="btn btn-tonal new-chat-btn" id="newChatBtn" type="button">
+        <span class="material-symbols-rounded">add</span>
+        <span data-i18n="sidebar.newChat">Новый чат</span>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <span class="material-symbols-rounded">search</span>
+      <input type="text" id="chatSearch" placeholder="Поиск по чатам" data-i18n-placeholder="sidebar.search" />
+    </div>
+
+    <nav class="chat-list" id="chatList" aria-label="История чатов"></nav>
+
+    <div class="sidebar-bottom">
+      <span id="accountSlot"></span>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main">
+
+    <header class="topbar">
+      <button class="icon-btn sidebar-open-btn" id="sidebarOpenBtn" type="button" aria-label="Открыть меню">
+        <span class="material-symbols-rounded">dock_to_left</span>
+      </button>
+
+      <div class="model-picker" id="modelPicker">
+        <button class="model-picker-btn" id="modelPickerBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span class="model-picker-name" id="modelPickerName">Gemini 3.5 Flash</span>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="model-picker-menu" id="modelPickerMenu" role="listbox"></div>
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <div class="brand-mark">
+        <img src="/assets/logo.png" alt="KulshAI" />
+        <span>KulshAI</span>
+      </div>
+    </header>
+
+    <!-- ============ CHAT AREA ============ -->
+    <div class="chat-scroll" id="chatScroll">
+
+      <div class="empty-state" id="emptyState">
+        <div class="empty-lottie" id="emptyLottie" aria-hidden="true"></div>
+        <h1 class="empty-title" data-i18n="empty.title">Чем займёмся?</h1>
+        <p class="empty-sub" data-i18n="empty.sub">Спрашивай о чём угодно — код, идеи, разбор файлов, разговор по душам.</p>
+
+        <div class="empty-model" id="emptyModel"></div>
+
+        <div class="suggestion-grid" id="suggestionGrid"></div>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+    </div>
+
+    <!-- ============ COMPOSER ============ -->
+    <div class="composer-wrap">
+      <div class="composer" id="composer">
+
+        <div class="attachment-tray" id="attachmentTray"></div>
+
+        <div class="composer-row">
+          <button class="icon-btn composer-attach" id="attachBtn" type="button" aria-label="Прикрепить файл">
+            <span class="material-symbols-rounded">attach_file</span>
+          </button>
+          <input type="file" id="fileInput" multiple hidden
+                 accept=".zip,.txt,.md,.csv,.json,.log,image/*" />
+
+          <textarea
+            id="composerInput"
+            class="composer-input"
+            rows="1"
+            placeholder="Напиши сообщение…"
+            data-i18n-placeholder="composer.placeholder"
+          ></textarea>
+
+          <button class="icon-btn composer-mic" id="micBtn" type="button" aria-label="Голосовой ввод">
+            <span class="material-symbols-rounded">mic</span>
+          </button>
+
+          <button class="icon-btn composer-send" id="sendBtn" type="button" aria-label="Отправить">
+            <span class="material-symbols-rounded">arrow_upward</span>
+          </button>
+        </div>
+      </div>
+      <p class="composer-hint" data-i18n="composer.hint">KulshAI может ошибаться. Проверяй важные факты.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============ SETTINGS DIALOG ============ -->
+<div class="dialog-backdrop" id="settingsBackdrop"></div>
+<div class="dialog settings-dialog" id="settingsDialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="dialog-header">
+    <h2 id="settingsTitle" data-i18n="settings.title">Настройки</h2>
+    <button class="icon-btn" id="settingsCloseBtn" type="button" aria-label="Закрыть">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+
+  <div class="dialog-tabs" id="settingsTabs">
+    <button class="dialog-tab is-active" data-tab="general" data-i18n="settings.tabs.general">Общие</button>
+    <button class="dialog-tab" data-tab="appearance" data-i18n="settings.tabs.appearance">Внешний вид</button>
+    <button class="dialog-tab" data-tab="voice" data-i18n="settings.tabs.voice">Голос</button>
+    <button class="dialog-tab" data-tab="data" data-i18n="settings.tabs.data">Данные</button>
+    <button class="dialog-tab" data-tab="about" data-i18n="settings.tabs.about">О приложении</button>
+  </div>
+
+  <div class="dialog-body">
+
+    <section class="settings-panel is-active" data-panel="general">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.language">Язык интерфейса</span>
+          <span class="settings-row-sub" data-i18n="settings.general.languageSub">Влияет только на интерфейс, не на ответы модели</span>
+        </div>
+        <div class="segmented" id="langSegmented">
+          <button class="segmented-btn" data-lang="ru">Русский</button>
+          <button class="segmented-btn" data-lang="en">English</button>
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.defaultModel">Модель по умолчанию</span>
+          <span class="settings-row-sub" data-i18n="settings.general.defaultModelSub">Будет выбрана в новых чатах</span>
+        </div>
+        <select class="select" id="defaultModelSelect"></select>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.sendOnEnter">Отправка по Enter</span>
+          <span class="settings-row-sub" data-i18n="settings.general.sendOnEnterSub">Shift+Enter — новая строка</span>
+        </div>
+        <button class="switch" id="sendOnEnterSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.autoScroll"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.autoScrollSub"></span>
+        </div>
+        <button class="switch" id="autoScrollSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.showHint"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.showHintSub"></span>
+        </div>
+        <button class="switch" id="showHintSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+      <div class="settings-row settings-row-col">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.temperature"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.temperatureSub"></span>
+        </div>
+        <div class="slider-line"><input type="range" id="tempRange" min="0" max="1.5" step="0.05" value="0.9" class="slider slider-wide" /><span id="tempVal" class="slider-val">0.9</span></div>
+      </div>
+      <div class="settings-row settings-row-col">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.general.customPrompt"></span>
+          <span class="settings-row-sub" data-i18n="settings.general.customPromptSub"></span>
+        </div>
+        <textarea id="customPrompt" class="text-area" rows="3" maxlength="1500"></textarea>
+      </div>
+    </section>
+
+    <section class="settings-panel" data-panel="appearance">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.theme">Тема</span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.themeSub">Тёмная, светлая или как в системе</span>
+        </div>
+        <div class="segmented" id="themeSegmented">
+          <button class="segmented-btn" data-theme="light">
+            <span class="material-symbols-rounded">light_mode</span>
+          </button>
+          <button class="segmented-btn" data-theme="dark">
+            <span class="material-symbols-rounded">dark_mode</span>
+          </button>
+          <button class="segmented-btn" data-theme="system">
+            <span class="material-symbols-rounded">contrast</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.accent">Акцентный цвет</span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.accentSub">Цвет кнопок и активных элементов</span>
+        </div>
+        <div class="swatch-row" id="accentSwatches"></div>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.animatedBg">Анимированный фон</span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.animatedBgSub">Мягкое переливание на фоне</span>
+        </div>
+        <button class="switch" id="animatedBgSwitch" role="switch" aria-checked="true"><span class="switch-knob"></span></button>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.fontSize">Размер текста</span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.fontSizeSub">Размер сообщений в чате</span>
+        </div>
+        <div class="segmented" id="fontSizeSegmented">
+          <button class="segmented-btn" data-size="sm">A</button>
+          <button class="segmented-btn" data-size="md">A</button>
+          <button class="segmented-btn" data-size="lg">A</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.chatWidth"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.chatWidthSub"></span>
+        </div>
+        <div class="segmented" id="chatWidthSeg"><button class="segmented-btn" data-v="narrow" data-i18n="settings.opt.narrow"></button><button class="segmented-btn" data-v="normal" data-i18n="settings.opt.normal"></button><button class="segmented-btn" data-v="wide" data-i18n="settings.opt.wide"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.density"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.densitySub"></span>
+        </div>
+        <div class="segmented" id="densitySeg"><button class="segmented-btn" data-v="compact" data-i18n="settings.opt.compact"></button><button class="segmented-btn" data-v="normal" data-i18n="settings.opt.normal"></button><button class="segmented-btn" data-v="relaxed" data-i18n="settings.opt.relaxed"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.fontFamily"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.fontFamilySub"></span>
+        </div>
+        <div class="segmented" id="fontFamilySeg"><button class="segmented-btn" data-v="gsans" data-i18n="settings.opt.gsans"></button><button class="segmented-btn" data-v="rflex" data-i18n="settings.opt.rflex"></button><button class="segmented-btn" data-v="system" data-i18n="settings.opt.system"></button></div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.appearance.reduceMotion"></span>
+          <span class="settings-row-sub" data-i18n="settings.appearance.reduceMotionSub"></span>
+        </div>
+        <button class="switch" id="reduceMotionSwitch" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
+    </section>
+
+    <section class="settings-panel" data-panel="voice">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.voice.autoplay">Озвучивать ответы</span>
+          <span class="settings-row-sub" data-i18n="settings.voice.autoplaySub">Автоматически проговаривать ответы вслух</span>
+        </div>
+        <button class="switch" id="autoplaySwitch" role="switch" aria-checked="false"><span class="switch-knob"></span></button>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.voice.voiceSelect">Голос озвучки</span>
+          <span class="settings-row-sub" data-i18n="settings.voice.voiceSelectSub">Голос системы устройства</span>
+        </div>
+        <select class="select" id="voiceSelect"></select>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.voice.rate">Скорость озвучки</span>
+        </div>
+        <input type="range" id="voiceRate" min="0.6" max="1.6" step="0.05" value="1" class="slider" />
+      </div>
+
+      <p class="settings-note" data-i18n="settings.voice.note">Голосовой ввод и озвучка работают через встроенные функции браузера и не требуют дополнительных ключей.</p>
+    </section>
+
+    <section class="settings-panel" data-panel="data">
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.data.export">Экспортировать чаты</span>
+          <span class="settings-row-sub" data-i18n="settings.data.exportSub">Сохранить всю историю в файл .json</span>
+        </div>
+        <button class="btn btn-tonal" id="exportChatsBtn" data-i18n="settings.data.exportBtn">Экспорт</button>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-row-text">
+          <span class="settings-row-title" data-i18n="settings.data.clear">Удалить все чаты</span>
+          <span class="settings-row-sub" data-i18n="settings.data.clearSub">Необратимо очистит локальную историю</span>
+        </div>
+        <button class="btn btn-danger" id="clearChatsBtn" data-i18n="settings.data.clearBtn">Очистить</button>
+      </div>
+
+      <p class="settings-note" data-i18n="settings.data.note">Чаты хранятся локально в этом браузере и никуда не отправляются, кроме сообщений, посылаемых модели.</p>
+    </section>
+
+    <section class="settings-panel" data-panel="about">
+      <div class="about-block">
+        <img src="/assets/logo.png" alt="KulshAI" class="about-logo" />
+        <h3>KulshAI</h3>
+        <p data-i18n="settings.about.text">Веб-интерфейс для общения с моделями семейства Gemini: текст, изображения, файлы и голос в одном чате.</p>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ============ SKILLS DIALOG ============ -->
+<div class="dialog-backdrop" id="skillsBackdrop"></div>
+<div class="dialog skills-dialog" id="skillsDialog" role="dialog" aria-modal="true" aria-labelledby="skillsTitle">
+  <div class="dialog-header">
+    <h2 id="skillsTitle" data-i18n="skills.title">Скиллы</h2>
+    <button class="icon-btn" id="skillsCloseBtn" type="button" aria-label="Закрыть">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+  <div class="dialog-body">
+    <p class="settings-note" data-i18n="skills.intro"></p>
+    <h3 class="skills-group" data-i18n="skills.builtin"></h3>
+    <div class="skills-list" id="skillsBuiltin"></div>
+    <h3 class="skills-group" data-i18n="skills.mine"></h3>
+    <div class="skills-list" id="skillsMine"></div>
+    <p class="skills-hint" id="skillsGuestHint" hidden data-i18n="skills.guestHint"></p>
+    <button class="btn btn-tonal skills-add" id="skillsAddBtn" type="button">
+      <span class="material-symbols-rounded">add</span><span data-i18n="skills.add"></span>
+    </button>
+    <div class="skills-form" id="skillsForm" hidden>
+      <input class="text-input" id="skillTitle" maxlength="60" data-i18n-placeholder="skills.namePh" />
+      <textarea class="text-area" id="skillContent" rows="6" maxlength="8000" data-i18n-placeholder="skills.bodyPh"></textarea>
+      <div class="skills-form-actions">
+        <button class="btn" id="skillCancelBtn" type="button" data-i18n="skills.cancel"></button>
+        <button class="btn btn-filled" id="skillSaveBtn" type="button" data-i18n="skills.save"></button>
+      </div>
+    </div>
+    <p class="skills-error" id="skillsError" hidden></p>
+  </div>
+</div>
+
+<script src="/lottie.min.js"></script>
+<script src="/marked.min.js"></script>
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/i18n.js"></script>
+<script src="/auth.js"></script>
+<script src="/sync.js"></script>
+<script src="/app.js"></script>
+
+</body>
+</html>

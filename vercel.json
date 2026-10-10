@@ -10,6 +10,30 @@
       "destination": "/api/auth?action=:action"
     },
     {
+      "source": "/chat",
+      "destination": "/chat/index.html"
+    },
+    {
+      "source": "/chat/",
+      "destination": "/chat/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/about/",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/docs",
+      "destination": "/docs/index.html"
+    },
+    {
+      "source": "/docs/",
+      "destination": "/docs/index.html"
+    },
+    {
       "source": "/donate",
       "destination": "/donate/index.html"
     },

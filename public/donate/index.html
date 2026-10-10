@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1" />
-<title>Поддержать KulshGPT</title>
-<meta name="description" content="Поддержать развитие KulshGPT — Telegram Stars или DonationAlerts." />
-<meta name="theme-color" content="#141019" />
+<title>Поддержать KulshAI</title>
+<meta name="description" content="Поддержать развитие KulshAI — Telegram Stars или DonationAlerts." />
+<meta name="theme-color" content="#100D16" />
 <meta name="color-scheme" content="dark light" />
 <link rel="icon" type="image/png" href="/assets/logo.png" />
 <link rel="apple-touch-icon" href="/assets/logo.png" />
@@ -25,7 +25,7 @@
 
 <style>
 /* ========================================================================
-   Donate — M3, те же токены, что и основной чат KulshGPT.
+   Donate — M3, те же токены, что и основной чат KulshAI.
    ======================================================================== */
 
 :root {
@@ -405,10 +405,10 @@ input { font: inherit; color: inherit; }
   <a class="icon-btn" href="/" aria-label="На главную" data-i18n-aria="back">
     <span class="material-symbols-rounded">arrow_back</span>
   </a>
-  <span class="title" data-i18n="title">Поддержать KulshGPT</span>
+  <span class="title" data-i18n="title">Поддержать KulshAI</span>
   <span id="accountSlot"></span>
   <div class="brand">
-    <img src="/assets/logo.png" alt="KulshGPT" />
+    <img src="/assets/logo.png" alt="KulshAI" />
   </div>
 </header>
 
@@ -477,13 +477,13 @@ input { font: inherit; color: inherit; }
     </p>
   </section>
 
-  <p class="footer">© 2026 KulshGPT · Open Source · <a href="/privacy/" style="color:inherit" data-i18n="priv">Политика конфиденциальности</a></p>
+  <p class="footer">© 2026 KulshAI · Open Source · <a href="/privacy/" style="color:inherit" data-i18n="priv">Политика конфиденциальности</a></p>
 </main>
 
 <script src="/auth.js"></script>
 <script>
 (function(){
-  var D={en:{"title": "Support KulshGPT", "h1": "Support Kulsh", "lead": "Funds go to servers, hosting and higher AI limits.", "s1": "1. Amount", "s2": "2. Payment method", "other": "Other amount", "rec": "Recommended", "daSub": "Russian cards, SBP, YooMoney, QIWI, crypto", "note": "When paying with Stars you will be redirected to the bot chat, which instantly issues an official Telegram Stars invoice.", "back": "Back to home", "priv": "Privacy Policy"}};
+  var D={en:{"title": "Support KulshAI", "h1": "Support Kulsh", "lead": "Funds go to servers, hosting and higher AI limits.", "s1": "1. Amount", "s2": "2. Payment method", "other": "Other amount", "rec": "Recommended", "daSub": "Russian cards, SBP, YooMoney, QIWI, crypto", "note": "When paying with Stars you will be redirected to the bot chat, which instantly issues an official Telegram Stars invoice.", "back": "Back to home", "priv": "Privacy Policy"}};
   var ru={}; document.querySelectorAll('[data-i18n]').forEach(function(e){ru[e.dataset.i18n]=e.innerHTML.trim();});
   ru.other='Другая сумма'; ru.back='На главную';
   function lang(){try{return JSON.parse(localStorage.getItem('kulshgpt.settings.v1')).lang==='en'?'en':'ru'}catch(e){return 'ru'}}
@@ -493,7 +493,7 @@ input { font: inherit; color: inherit; }
     document.querySelectorAll('[data-i18n]').forEach(function(e){if(T[e.dataset.i18n]!=null)e.innerHTML=T[e.dataset.i18n];});
     document.querySelectorAll('[data-i18n-ph]').forEach(function(e){e.placeholder=T[e.dataset.i18nPh];});
     document.querySelectorAll('[data-i18n-aria]').forEach(function(e){e.setAttribute('aria-label',T[e.dataset.i18nAria]);});
-    document.title=(l==='en'?'Support KulshGPT':'Поддержать KulshGPT');
+    document.title=(l==='en'?'Support KulshAI':'Поддержать KulshAI');
     if(window.updateStars)window.updateStars();
   }
   function theme(){

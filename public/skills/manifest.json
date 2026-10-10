@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "id": "coder",
+      "icon": "code",
+      "title": { "ru": "Кодер", "en": "Coder" },
+      "desc": { "ru": "Пишет и объясняет код, ловит баги", "en": "Writes and explains code, catches bugs" },
+      "file": "coder.md"
+    },
+    {
+      "id": "editor",
+      "icon": "edit_note",
+      "title": { "ru": "Редактор", "en": "Editor" },
+      "desc": { "ru": "Причёсывает текст: яснее, короче, без воды", "en": "Polishes text: clearer, shorter, no fluff" },
+      "file": "editor.md"
+    },
+    {
+      "id": "teacher",
+      "icon": "school",
+      "title": { "ru": "Объяснятор", "en": "Explainer" },
+      "desc": { "ru": "Разбирает сложное простыми словами", "en": "Breaks down hard things simply" },
+      "file": "teacher.md"
+    },
+    {
+      "id": "translator",
+      "icon": "translate",
+      "title": { "ru": "Переводчик", "en": "Translator" },
+      "desc": { "ru": "Переводит живо и точно, сохраняя тон", "en": "Translates naturally, keeping the tone" },
+      "file": "translator.md"
+    },
+    {
+      "id": "analyst",
+      "icon": "query_stats",
+      "title": { "ru": "Аналитик", "en": "Analyst" },
+      "desc": { "ru": "Считает, сравнивает и делает выводы", "en": "Calculates, compares and concludes" },
+      "file": "analyst.md"
+    }
+  ]
+}

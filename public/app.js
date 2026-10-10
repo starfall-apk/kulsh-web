@@ -1,4 +1,4 @@
-// app.js — KulshGPT front-end logic
+// app.js — KulshAI front-end logic
 (function () {
   'use strict';
 
@@ -6,14 +6,26 @@
   // MODELS
   // ============================================================
   const MODELS = [
-    { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',      icon: 'bolt',        tone: 'amber', desc: { ru: 'Стабильная, быстрая модель', en: 'Stable, fast model' } },
-    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', icon: 'flash_on',    tone: 'sky',   desc: { ru: 'Самая быстрая и лёгкая', en: 'Fastest and lightest' } },
-    { id: 'gemini-3.5-flash',      name: 'Gemini 3.5 Flash',      icon: 'auto_awesome', tone: 'mint', desc: { ru: 'Баланс скорости и качества', en: 'Balance of speed and quality' } },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', icon: 'speed', tone: 'sky', desc: { ru: 'Облегчённая версия 3.5', en: 'Lightweight 3.5 variant' } },
-    { id: 'gemini-3.6-flash',      name: 'Gemini 3.6 Flash',      icon: 'auto_awesome', tone: 'mint', desc: { ru: 'Улучшенное рассуждение', en: 'Improved reasoning' } },
-    { id: 'gemini-3.7-flash',      name: 'Gemini 3.7 Flash',      icon: 'auto_awesome', tone: 'rose', desc: { ru: 'Новее и точнее', en: 'Newer and more accurate' } },
-    { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      icon: 'auto_awesome', tone: 'rose', desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
+    // ---- Google Gemini ----
+    { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',      provider: 'google', vision: true,  points: 1,   icon: 'bolt',         tone: 'amber', desc: { ru: 'Стабильная, быстрая модель', en: 'Stable, fast model' } },
+    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'google', vision: true,  points: 1,   icon: 'flash_on',     tone: 'sky',   desc: { ru: 'Самая быстрая и лёгкая', en: 'Fastest and lightest' } },
+    { id: 'gemini-3.5-flash',      name: 'Gemini 3.5 Flash',      provider: 'google', vision: true,  points: 1.5, icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Баланс скорости и качества', en: 'Balance of speed and quality' } },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', provider: 'google', vision: true,  points: 1.5, icon: 'speed',        tone: 'sky',   desc: { ru: 'Облегчённая версия 3.5', en: 'Lightweight 3.5 variant' } },
+    { id: 'gemini-3.6-flash',      name: 'Gemini 3.6 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Улучшенное рассуждение', en: 'Improved reasoning' } },
+    { id: 'gemini-3.7-flash',      name: 'Gemini 3.7 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Новее и точнее', en: 'Newer and more accurate' } },
+    { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
+    // ---- NeutralBeats ----
+    { id: 'deepseek-v4.1-flash',   name: 'DeepSeek V4.1 Flash',   provider: 'neutralbeats', vision: true,  points: 1, icon: 'psychology', tone: 'mint',  desc: { ru: 'Выгодная и умная, большой контекст', en: 'Great value, large context' } },
+    { id: 'deepseek-v4-pro',       name: 'DeepSeek V4 Pro',       provider: 'neutralbeats', vision: false, points: 2, icon: 'neurology',  tone: 'sky',   desc: { ru: 'Усиленное рассуждение, без зрения', en: 'Strong reasoning, no vision' } },
+    { id: 'glm-5.3-flash',         name: 'GLM 5.3 Flash',         provider: 'neutralbeats', vision: true,  points: 1, icon: 'bolt',       tone: 'mint',  desc: { ru: 'Быстрая и аккуратная', en: 'Fast and precise' } },
+    { id: 'kimi-k3',               name: 'Kimi K3',               provider: 'neutralbeats', vision: true,  points: 3, icon: 'star',       tone: 'amber', desc: { ru: 'Сильна в длинных текстах', en: 'Strong with long text' } },
   ];
+
+  // Человекочитаемые названия провайдеров для группировки в списке моделей.
+  const PROVIDER_LABELS = { google: 'Google Gemini', neutralbeats: 'NeutralBeats' };
+  const PROVIDER_ORDER = ['google', 'neutralbeats'];
+  const modelById = (id) => MODELS.find((m) => m.id === id) || null;
+
 
   // Уровни усилий.
   const EFFORTS = [
@@ -45,7 +57,7 @@
   }
   function loadSettings() {
     const defaults = {
-      lang: 'ru',
+      lang: (function () { try { const n = (navigator.language || 'ru').toLowerCase(); return n.indexOf('ru') === 0 ? 'ru' : 'en'; } catch { return 'ru'; } })(),
       theme: 'dark',
       accent: 'violet',
       animatedBg: true,
@@ -64,6 +76,7 @@
       fontFamily: 'gsans',
       reduceMotion: false,
       effort: 'medium',
+      skills: [],
     };
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
@@ -167,6 +180,20 @@
     voiceRate: $('#voiceRate'),
     exportChatsBtn: $('#exportChatsBtn'),
     clearChatsBtn: $('#clearChatsBtn'),
+
+    skillsBackdrop: $('#skillsBackdrop'),
+    skillsDialog: $('#skillsDialog'),
+    skillsCloseBtn: $('#skillsCloseBtn'),
+    skillsBuiltin: $('#skillsBuiltin'),
+    skillsMine: $('#skillsMine'),
+    skillsAddBtn: $('#skillsAddBtn'),
+    skillsForm: $('#skillsForm'),
+    skillTitle: $('#skillTitle'),
+    skillContent: $('#skillContent'),
+    skillCancelBtn: $('#skillCancelBtn'),
+    skillSaveBtn: $('#skillSaveBtn'),
+    skillsGuestHint: $('#skillsGuestHint'),
+    skillsError: $('#skillsError'),
   };
 
   // ============================================================
@@ -315,29 +342,38 @@
     if (chip) chip.textContent = current.id;
 
     el.modelPickerMenu.innerHTML = '';
-    MODELS.forEach((m) => {
-      const locked = KA.guest && m.id !== KA.GUEST_MODEL;
-      const opt = document.createElement('button');
-      opt.className = 'model-option' + (m.id === currentModelId ? ' is-selected' : '') + (locked ? ' is-locked' : '');
-      opt.setAttribute('role', 'option');
-      const lang = AppState.settings.lang;
-      opt.innerHTML = `
-        <span class="model-option-icon tone-${m.tone || 'mint'}"><span class="material-symbols-rounded">${m.icon}</span></span>
-        <span class="model-option-text">
-          <span class="model-option-name">${m.name}</span>
-          <span class="model-option-desc">${m.desc[lang] || m.desc.ru}</span>
-        </span>
-        ${locked ? '<span class="lock">' + KA.ICON.lock + '</span>' : (m.id === currentModelId ? '<span class="material-symbols-rounded check">check</span>' : '')}
-      `;
-      opt.addEventListener('click', () => {
-        if (locked) { closeModelPicker(); KA.open(KA.t().lockedModel); return; }
-        const c = getActiveChat();
-        if (c) { c.model = m.id; saveChats(AppState.chats); }
-        else { AppState.settings.defaultModel = m.id; saveSettings(AppState.settings); }
-        renderModelPicker();
-        closeModelPicker();
+    const lang = AppState.settings.lang;
+    PROVIDER_ORDER.forEach((prov) => {
+      const list = MODELS.filter((m) => m.provider === prov);
+      if (!list.length) return;
+      const head = document.createElement('div');
+      head.className = 'model-menu-section';
+      head.textContent = PROVIDER_LABELS[prov] || prov;
+      el.modelPickerMenu.appendChild(head);
+
+      list.forEach((m) => {
+        const locked = KA.guest && m.id !== KA.GUEST_MODEL;
+        const opt = document.createElement('button');
+        opt.className = 'model-option' + (m.id === currentModelId ? ' is-selected' : '') + (locked ? ' is-locked' : '');
+        opt.setAttribute('role', 'option');
+        opt.innerHTML = `
+          <span class="model-option-icon tone-${m.tone || 'mint'}"><span class="material-symbols-rounded">${m.icon}</span></span>
+          <span class="model-option-text">
+            <span class="model-option-name">${m.name}</span>
+            <span class="model-option-desc">${m.desc[lang] || m.desc.ru}</span>
+          </span>
+          ${locked ? '<span class="lock">' + KA.ICON.lock + '</span>' : (m.id === currentModelId ? '<span class="material-symbols-rounded check">check</span>' : '')}
+        `;
+        opt.addEventListener('click', () => {
+          if (locked) { closeModelPicker(); KA.open(KA.t().lockedModel); return; }
+          const c = getActiveChat();
+          if (c) { c.model = m.id; saveChats(AppState.chats); }
+          else { AppState.settings.defaultModel = m.id; saveSettings(AppState.settings); }
+          renderModelPicker();
+          closeModelPicker();
+        });
+        el.modelPickerMenu.appendChild(opt);
       });
-      el.modelPickerMenu.appendChild(opt);
     });
 
     const divider = document.createElement('div');
@@ -392,7 +428,7 @@
         renderer: 'svg',
         loop: true,
         autoplay: true,
-        path: `lotties/${pick}.json`,
+        path: `/lotties/${pick}.json`,
         rendererSettings: { progressiveLoad: true },
       });
     }
@@ -859,7 +895,7 @@
     meta.className = 'msg-meta';
     const name = document.createElement('span');
     name.className = 'msg-name';
-    name.textContent = m.role === 'user' ? window.t('chat.you') : 'KulshGPT';
+    name.textContent = m.role === 'user' ? window.t('chat.you') : 'KulshAI';
     meta.appendChild(name);
     if (m.role !== 'user' && m.model) {
       const mod = document.createElement('span');
@@ -1129,6 +1165,7 @@
     let cp = window.KulshAuth.guest ? '' : (AppState.settings.customPrompt || '');
     const ep = effortPrefix();
     if (ep) cp = ep + (cp ? '\n' + cp : '');
+    const skillsPrompt = window.KulshAuth.guest ? '' : await buildSkillsPrompt();
 
     try {
       let recallPass = false;
@@ -1146,6 +1183,7 @@
             model: window.KulshAuth.guest ? window.KulshAuth.GUEST_MODEL : chat.model,
             temperature: AppState.settings.temperature,
             customPrompt: cp,
+            skillsPrompt,
             recall: recallPass,
             hasOldMedia: payload.hasOldMedia,
           }),
@@ -1343,13 +1381,172 @@
 
   function populateModelSelect() {
     el.defaultModelSelect.innerHTML = '';
-    MODELS.forEach((m) => {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = m.name;
-      if (m.id === AppState.settings.defaultModel) opt.selected = true;
-      el.defaultModelSelect.appendChild(opt);
+    PROVIDER_ORDER.forEach((prov) => {
+      const list = MODELS.filter((m) => m.provider === prov);
+      if (!list.length) return;
+      const group = document.createElement('optgroup');
+      group.label = PROVIDER_LABELS[prov] || prov;
+      list.forEach((m) => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        if (m.id === AppState.settings.defaultModel) opt.selected = true;
+        group.appendChild(opt);
+      });
+      el.defaultModelSelect.appendChild(group);
     });
+  }
+
+  // Принимает ли текущая модель вложения (DeepSeek V4 Pro — без зрения).
+  function currentModelHasVision() {
+    const chat = getActiveChat();
+    const id = chat ? chat.model : AppState.settings.defaultModel;
+    const m = modelById(id);
+    return !m || m.vision !== false;
+  }
+
+  // ============================================================
+  // SKILLS (встроенные из /skills/manifest.json + личные из /api/skills)
+  // ============================================================
+  let skillsCatalog = null;   // встроенные (статика репозитория)
+  let userSkills = [];        // личные (Upstash Redis через /api/skills)
+  const skillCache = new Map();
+
+  const curLang = () => AppState.settings.lang;
+  const pickLang = (obj) => !obj ? '' : (curLang() === 'en' ? (obj.en || obj.ru) : (obj.ru || obj.en));
+
+  async function loadCatalog() {
+    if (skillsCatalog) return skillsCatalog;
+    try {
+      const j = await fetch('/skills/manifest.json', { cache: 'force-cache' }).then((r) => r.json());
+      skillsCatalog = (j && Array.isArray(j.skills)) ? j.skills : [];
+    } catch { skillsCatalog = []; }
+    return skillsCatalog;
+  }
+
+  async function loadUserSkills() {
+    if (window.KulshAuth.guest) { userSkills = []; return userSkills; }
+    try {
+      const j = await fetch('/api/skills', { cache: 'no-store' }).then((r) => r.json());
+      userSkills = Array.isArray(j.skills) ? j.skills : [];
+    } catch { userSkills = []; }
+    return userSkills;
+  }
+
+  // Текст скилла: встроенный — из .md файла, личный — из своего содержимого.
+  async function skillContent(id) {
+    if (skillCache.has(id)) return skillCache.get(id);
+    let text = '';
+    const meta = (await loadCatalog()).find((s) => s.id === id);
+    if (meta) { try { text = await fetch('/skills/' + meta.file).then((r) => r.text()); } catch {} }
+    else { const us = userSkills.find((s) => s.id === id); text = us ? us.content : ''; }
+    skillCache.set(id, text);
+    return text;
+  }
+
+  // Собираем включённые скиллы в один блок инструкций для сервера.
+  async function buildSkillsPrompt() {
+    const ids = AppState.settings.skills || [];
+    if (!ids.length) return '';
+    if (!userSkills.length) await loadUserSkills();
+    const parts = [];
+    for (const id of ids) { const c = await skillContent(id); if (c) parts.push(c.trim()); }
+    return parts.join('\n\n---\n\n').slice(0, 6000);
+  }
+
+  const isSkillOn = (id) => (AppState.settings.skills || []).includes(id);
+  function toggleSkill(id) {
+    const set = new Set(AppState.settings.skills || []);
+    if (set.has(id)) set.delete(id); else set.add(id);
+    AppState.settings.skills = [...set];
+    saveSettings(AppState.settings);
+    renderSkills();
+  }
+
+  function skillRowHTML(id, icon, title, desc, removable) {
+    const on = isSkillOn(id);
+    return `<div class="skills-item ${on ? 'is-on' : ''}" data-id="${escapeAttr(id)}">
+      <span class="skills-ico"><span class="material-symbols-rounded">${escapeHtml(icon)}</span></span>
+      <span class="skills-txt">
+        <span class="skills-name">${escapeHtml(title)}</span>
+        ${desc ? `<span class="skills-desc">${escapeHtml(desc)}</span>` : ''}
+      </span>
+      ${removable
+        ? `<button class="skills-del" type="button" data-del="${escapeAttr(id)}" aria-label="${escapeAttr(window.t('skills.delete'))}"><span class="material-symbols-rounded">delete</span></button>`
+        : `<button class="switch" type="button" role="switch" aria-checked="${on}" data-toggle="${escapeAttr(id)}"><span class="switch-knob"></span></button>`}
+    </div>`;
+  }
+
+  function renderSkills() {
+    if (!el.skillsBuiltin) return;
+    const cat = skillsCatalog || [];
+    el.skillsBuiltin.innerHTML = cat.map((s) =>
+      skillRowHTML(s.id, s.icon || 'bolt', pickLang(s.title), pickLang(s.desc), false)).join('');
+    el.skillsMine.innerHTML = userSkills.length
+      ? userSkills.map((s) => skillRowHTML(s.id, 'extension', s.title, (s.content || '').replace(/\s+/g, ' ').slice(0, 100), true)).join('')
+      : `<p class="skills-empty">${escapeHtml(window.t('skills.empty'))}</p>`;
+    const guest = window.KulshAuth.guest;
+    if (el.skillsGuestHint) el.skillsGuestHint.hidden = !guest;
+    if (el.skillsAddBtn) el.skillsAddBtn.hidden = guest;
+  }
+
+  async function openSkills() {
+    if (!el.skillsDialog) return;
+    el.skillsBackdrop.classList.add('is-open');
+    el.skillsDialog.classList.add('is-open');
+    el.skillsError.hidden = true;
+    await Promise.all([loadCatalog(), loadUserSkills()]);
+    renderSkills();
+  }
+  function closeSkills() {
+    if (!el.skillsDialog) return;
+    el.skillsBackdrop.classList.remove('is-open');
+    el.skillsDialog.classList.remove('is-open');
+    el.skillsForm.hidden = true;
+    el.skillsError.hidden = true;
+  }
+  function showSkillError(msg) {
+    if (!el.skillsError) return;
+    el.skillsError.textContent = msg;
+    el.skillsError.hidden = false;
+  }
+
+  async function saveSkill() {
+    const title = (el.skillTitle.value || '').trim();
+    const content = (el.skillContent.value || '').trim();
+    if (!title || !content) return;
+    if (userSkills.length >= 20) return showSkillError(window.t('skills.limit'));
+    el.skillSaveBtn.disabled = true;
+    try {
+      const r = await fetch('/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j.skill) throw new Error((j && j.error) || 'fail');
+      userSkills = [j.skill, ...userSkills].slice(0, 20);
+      skillCache.set(j.skill.id, content);
+      // Новый скилл сразу включаем — так ожидаемее.
+      AppState.settings.skills = [...new Set([...(AppState.settings.skills || []), j.skill.id])];
+      saveSettings(AppState.settings);
+      el.skillTitle.value = ''; el.skillContent.value = '';
+      el.skillsForm.hidden = true; el.skillsError.hidden = true;
+      renderSkills();
+    } catch {
+      showSkillError(window.t('skills.error'));
+    } finally {
+      el.skillSaveBtn.disabled = false;
+    }
+  }
+
+  async function deleteSkill(id) {
+    try { await fetch('/api/skills?id=' + encodeURIComponent(id), { method: 'DELETE' }); } catch {}
+    userSkills = userSkills.filter((s) => s.id !== id);
+    skillCache.delete(id);
+    AppState.settings.skills = (AppState.settings.skills || []).filter((x) => x !== id);
+    saveSettings(AppState.settings);
+    renderSkills();
   }
 
   // ============================================================
@@ -1357,6 +1554,18 @@
   // ============================================================
   function wireEvents() {
     window.addEventListener('kulsh-auth', () => { renderModelPicker(); renderChatList(); });
+
+    // Действия из объединённого меню аккаунта (auth.js).
+    window.addEventListener('kulsh-open-settings', () => { populateModelSelect(); openSettings(); });
+    window.addEventListener('kulsh-open-skills', () => { openSkills(); });
+    // Смена языка из меню: auth.js пишет настройку в localStorage напрямую,
+    // поэтому перечитываем её и заново применяем к интерфейсу.
+    window.addEventListener('kulsh-lang-change', () => {
+      AppState.settings = loadSettings();
+      applySettingsToDOM();
+      renderChatList(el.chatSearch.value);
+      renderMessages();
+    });
     el.newChatBtn.addEventListener('click', () => {
       if (window.KulshAuth.guest) { window.KulshAuth.toast(); return; }
       createChat();
@@ -1376,7 +1585,11 @@
       if (!el.modelPicker.contains(e.target)) closeModelPicker();
     });
 
-    el.attachBtn.addEventListener('click', () => { if (window.KulshAuth.guest) return window.KulshAuth.toast(); el.fileInput.click(); });
+    el.attachBtn.addEventListener('click', () => {
+      if (window.KulshAuth.guest) return window.KulshAuth.toast();
+      if (!currentModelHasVision()) return alert(window.t('attach.noVision'));
+      el.fileInput.click();
+    });
     el.fileInput.addEventListener('change', (e) => {
       handleFiles(e.target.files);
       el.fileInput.value = '';
@@ -1385,7 +1598,10 @@
     el.chatScroll.addEventListener('dragover', (e) => e.preventDefault());
     el.chatScroll.addEventListener('drop', (e) => {
       e.preventDefault();
-      if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+      if (e.dataTransfer.files.length) {
+        if (!currentModelHasVision()) return alert(window.t('attach.noVision'));
+        handleFiles(e.dataTransfer.files);
+      }
     });
 
     el.composerInput.addEventListener('input', autoGrow);
@@ -1424,9 +1640,37 @@
       showRandomLottie(other);
     });
 
-    el.settingsBtn.addEventListener('click', () => { populateModelSelect(); openSettings(); });
+    // Кнопка «Настройки» в чате теперь заменена объединённым меню аккаунта
+    // (auth.js), но оставляем fallback на случай, если она где-то осталась.
+    if (el.settingsBtn) el.settingsBtn.addEventListener('click', () => { populateModelSelect(); openSettings(); });
     el.settingsCloseBtn.addEventListener('click', closeSettings);
     el.settingsBackdrop.addEventListener('click', closeSettings);
+
+    // Skills dialog
+    if (el.skillsCloseBtn) el.skillsCloseBtn.addEventListener('click', closeSkills);
+    if (el.skillsBackdrop) el.skillsBackdrop.addEventListener('click', closeSkills);
+    if (el.skillsBuiltin) el.skillsBuiltin.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-toggle]');
+      if (t) toggleSkill(t.dataset.toggle);
+    });
+    if (el.skillsMine) el.skillsMine.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-toggle]');
+      if (t) { toggleSkill(t.dataset.toggle); return; }
+      const d = e.target.closest('[data-del]');
+      if (d) deleteSkill(d.dataset.del);
+    });
+    if (el.skillsAddBtn) el.skillsAddBtn.addEventListener('click', () => {
+      el.skillsForm.hidden = false;
+      el.skillsError.hidden = true;
+      el.skillTitle.focus();
+    });
+    if (el.skillCancelBtn) el.skillCancelBtn.addEventListener('click', () => {
+      el.skillsForm.hidden = true; el.skillsError.hidden = true;
+    });
+    if (el.skillSaveBtn) el.skillSaveBtn.addEventListener('click', saveSkill);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && el.skillsDialog && el.skillsDialog.classList.contains('is-open')) closeSkills();
+    });
 
     el.settingsTabs.addEventListener('click', (e) => {
       const btn = e.target.closest('.dialog-tab');
@@ -1608,6 +1852,12 @@
     }
 
     refreshAllSliderFills();
+
+    // Открытие нужного диалога, если пришли по ссылке (/chat/#settings, /chat/#skills).
+    const hash = (location.hash || '').replace('#', '');
+    if (hash === 'settings') { populateModelSelect(); openSettings(); }
+    else if (hash === 'skills') { openSkills(); }
+    if (hash) { try { history.replaceState(null, '', location.pathname); } catch {} }
 
     // Снимаем скелетон после того, как интерфейс полностью отрисован.
     document.body.classList.remove('is-booting');

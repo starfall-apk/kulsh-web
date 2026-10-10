@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark" data-page="docs">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Kulsh API — документация</title>
+<meta name="description" content="Документация API Kulsh: эндпоинты, аутентификация, модели, лимиты и примеры запросов." />
+<meta name="theme-color" content="#100D16" />
+<meta name="color-scheme" content="dark light" />
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+
+<link rel="preload" href="/fonts/google-sans-flex-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-flex-round-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/roboto-flex-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/google-sans-code-latin.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/material-symbols-rounded-v2.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/fonts/fonts-v2.css" />
+<link rel="stylesheet" href="/auth.css" />
+<link rel="stylesheet" href="/pages.css" />
+<script>try{var s=JSON.parse(localStorage.getItem("kulshgpt.settings.v1")||"{}"),r=document.documentElement,t=s.theme||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";r.dataset.theme=t;r.dataset.accent=s.accent||"violet";var lg=s.lang||((navigator.language||"ru").toLowerCase().indexOf("ru")===0?"ru":"en");r.lang=lg}catch(e){}</script>
+</head>
+<body>
+
+<div class="bg-layer" aria-hidden="true">
+  <div class="bg-shimmer"><div class="bg-base"></div><div class="bg-shine"></div></div>
+  <div class="bg-vignette"></div>
+</div>
+
+<header class="mnav">
+  <div class="wrap mnav-inner">
+    <a class="mnav-brand" href="/"><img src="/assets/logo.png" alt="" /><span>Kulsh</span></a>
+    <nav class="mnav-links">
+      <a href="/" data-i18n="nav.home">Главная</a>
+      <a href="/about" data-i18n="nav.about">О Kulsh</a>
+      <a href="/docs" class="is-active" data-i18n="nav.api">API</a>
+    </nav>
+    <div class="mnav-spacer"></div>
+    <div class="mnav-actions">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <button class="mnav-icon" data-theme-toggle type="button" data-i18n-aria="nav.theme" aria-label="Сменить тему">
+        <span class="material-symbols-rounded">light_mode</span>
+      </button>
+      <span id="accountSlot"></span>
+      <a class="btn btn-filled btn-sm mnav-cta" href="/chat"><span class="material-symbols-rounded">chat</span><span data-i18n="nav.openChat">Открыть чат</span></a>
+    </div>
+    <details class="mnav-mobile">
+      <summary class="mnav-icon" data-i18n-aria="nav.menu" aria-label="Меню"><span class="material-symbols-rounded">menu</span></summary>
+      <div class="mm-panel">
+        <nav class="mm-nav">
+          <a href="/" data-i18n="nav.home">Главная</a>
+          <a href="/about" data-i18n="nav.about">О Kulsh</a>
+          <a href="/docs" class="is-active" data-i18n="nav.api">API</a>
+        </nav>
+        <div class="mm-controls">
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" data-lang="ru">RU</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
+          <button class="mnav-icon" data-theme-toggle type="button" data-i18n-aria="nav.theme" aria-label="Сменить тему">
+            <span class="material-symbols-rounded">light_mode</span>
+          </button>
+        </div>
+        <a class="btn btn-filled mm-cta" href="/chat"><span class="material-symbols-rounded">chat</span><span data-i18n="nav.openChat">Открыть чат</span></a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<section class="section" style="padding-top:var(--sp-5);">
+  <div class="wrap">
+
+    <div class="section-head docs-head">
+      <div class="eyebrow" data-i18n="docs.eyebrow">Разработчикам</div>
+      <h2 data-i18n="docs.h2">API Kulsh</h2>
+      <p data-i18n="docs.p">Единый интерфейс к моделям Kulsh. Один ключ, один общий лимит и баланс — как в веб-чате.</p>
+    </div>
+
+    <div class="callout docs-callout">
+      <span class="material-symbols-rounded">construction</span>
+      <p data-i18n="docs.wip">Публичный API с персональными ключами ещё готовится. Страница описывает будущий контракт — эндпоинты и форматы уже зафиксированы, чтобы ты мог проектировать интеграцию заранее.</p>
+    </div>
+
+    <div class="docs">
+      <nav class="docs-nav">
+        <a href="#overview" data-i18n="docs.nav.overview">Обзор</a>
+        <a href="#auth" data-i18n="docs.nav.auth">Аутентификация</a>
+        <a href="#chat" data-i18n="docs.nav.chat">POST /v1/chat</a>
+        <a href="#models" data-i18n="docs.nav.models">Модели</a>
+        <a href="#usage" data-i18n="docs.nav.usage">Лимиты и usage</a>
+        <a href="#errors" data-i18n="docs.nav.errors">Ошибки</a>
+      </nav>
+
+      <div class="docs-body">
+        <h2 id="overview" data-i18n="docs.nav.overview">Обзор</h2>
+        <p data-i18n="docs.overview.p">API принимает сообщения и возвращает ответ модели потоком (Server-Sent Events). Формат совместим с распространённой схемой чат-комплишенов, поэтому подключается обычным HTTP-клиентом.</p>
+        <ul>
+          <li data-i18n-html="docs.overview.l1">Базовый адрес: <code>https://ТВОЙ-ДОМЕН/api/v1</code></li>
+          <li data-i18n-html="docs.overview.l2">Формат: JSON, ответ — поток событий <code>text/event-stream</code></li>
+          <li data-i18n-html="docs.overview.l3">Аутентификация: заголовок <code>Authorization: Bearer &lt;API_KEY&gt;</code></li>
+        </ul>
+
+        <h2 id="auth" data-i18n="docs.nav.auth">Аутентификация</h2>
+        <p data-i18n="docs.auth.p">Ключ создаётся в аккаунте Kulsh. Один ключ работает и для веб-чата, и для API, а расход идёт с общего баланса и бесплатного лимита.</p>
+        <div class="code"><pre><span class="c-com"># пример заголовка</span>
+Authorization: Bearer <span class="c-str">kulsh_sk_...</span></pre></div>
+
+        <h2 id="chat" data-i18n="docs.nav.chat">POST /v1/chat</h2>
+        <div class="endpoint"><span class="method method-post">POST</span><span>/api/v1/chat</span></div>
+        <p data-i18n="docs.chat.p">Отправляет историю сообщений и стримит ответ.</p>
+
+        <h3 data-i18n="docs.chat.req">Тело запроса</h3>
+        <div class="code"><pre>{
+  <span class="c-key">"model"</span>: <span class="c-str">"deepseek-v4.1-flash"</span>,
+  <span class="c-key">"messages"</span>: [
+    { <span class="c-key">"role"</span>: <span class="c-str">"user"</span>, <span class="c-key">"content"</span>: <span class="c-str">"Привет, Кульш!"</span> }
+  ],
+  <span class="c-key">"temperature"</span>: <span class="c-str">0.9</span>,
+  <span class="c-key">"stream"</span>: <span class="c-str">true</span>
+}</pre></div>
+
+        <h3 data-i18n="docs.chat.res">Ответ (поток)</h3>
+        <div class="code"><pre><span class="c-key">data:</span> {<span class="c-key">"delta"</span>:<span class="c-str">"Привет!"</span>}
+<span class="c-key">data:</span> {<span class="c-key">"delta"</span>:<span class="c-str">" Чем помочь?"</span>}
+<span class="c-key">data:</span> {<span class="c-key">"done"</span>:true,<span class="c-key">"usage"</span>:{<span class="c-key">"points"</span>:1}}</pre></div>
+
+        <h2 id="models" data-i18n="docs.nav.models">Модели</h2>
+        <div class="endpoint"><span class="method method-get">GET</span><span>/api/v1/models</span></div>
+        <p data-i18n="docs.models.p">Возвращает доступные модели и их стоимость в очках лимита.</p>
+        <div class="code"><pre>{
+  <span class="c-key">"models"</span>: [
+    { <span class="c-key">"id"</span>: <span class="c-str">"gemini-3.5-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"google"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1.5</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4.1-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4-pro"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">false</span>, <span class="c-key">"points"</span>: <span class="c-str">2</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"glm-5.3-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"kimi-k3"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">3</span> }
+  ]
+}</pre></div>
+
+        <h2 id="usage" data-i18n="docs.nav.usage">Лимиты и usage</h2>
+        <p data-i18n="docs.usage.p">У каждого аккаунта одна шкала бесплатного лимита в очках. Каждая модель тратит её по-разному: лёгкие — почти ничего, флагманы — заметно больше.</p>
+        <div class="endpoint"><span class="method method-get">GET</span><span>/api/v1/usage</span></div>
+        <div class="code"><pre>{
+  <span class="c-key">"used"</span>: <span class="c-str">42</span>,
+  <span class="c-key">"limit"</span>: <span class="c-str">300</span>,
+  <span class="c-key">"resetsAt"</span>: <span class="c-str">"2026-10-11T00:00:00Z"</span>,
+  <span class="c-key">"balance"</span>: <span class="c-str">0</span>
+}</pre></div>
+        <div class="callout" style="margin-top:var(--sp-3);">
+          <span class="material-symbols-rounded">info</span>
+          <p data-i18n="docs.usage.note">Если ответ не пришёл по технической причине на стороне сервиса — очки не списываются.</p>
+        </div>
+
+        <h2 id="errors" data-i18n="docs.nav.errors">Ошибки</h2>
+        <div class="code"><pre>{ <span class="c-key">"error"</span>: <span class="c-str">"limit_exceeded"</span>, <span class="c-key">"message"</span>: <span class="c-str">"Дневной лимит исчерпан"</span> }</pre></div>
+        <ul>
+          <li data-i18n-html="docs.errors.l1"><code>401</code> — ключ отсутствует или недействителен</li>
+          <li data-i18n-html="docs.errors.l2"><code>402</code> — исчерпан бесплатный лимит и нулевой баланс</li>
+          <li data-i18n-html="docs.errors.l3"><code>429</code> — слишком много запросов, попробуй позже</li>
+          <li data-i18n-html="docs.errors.l4"><code>502</code> — модель временно недоступна (очки не списываются)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand"><img src="/assets/logo.png" alt="" /><span>Kulsh</span></div>
+    <nav class="footer-links">
+      <a href="/" data-i18n="foot.home">Главная</a>
+      <a href="/about" data-i18n="foot.about">О Kulsh</a>
+      <a href="/privacy" data-i18n="foot.privacy">Политика конфиденциальности</a>
+      <a href="/donate" data-i18n="foot.donate">Поддержать</a>
+    </nav>
+    <div class="footer-spacer"></div>
+    <div class="footer-note">© <span data-year>2026</span> Kulsh · <span data-i18n="foot.note">open-source</span></div>
+  </div>
+</footer>
+
+<script src="/auth.js"></script>
+<script src="/pages.js"></script>
+</body>
+</html>

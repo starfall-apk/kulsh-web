@@ -24,7 +24,7 @@ const PROVIDERS = {
   google: {
     env: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
     authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-    extra: { scope: 'openid profile', prompt: 'select_account' },
+    extra: { scope: 'openid profile email', prompt: 'select_account' },
     async profile(code, redirect, id, secret) {
       const t = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
@@ -36,7 +36,8 @@ const PROVIDERS = {
         headers: { Authorization: `Bearer ${t.access_token}` },
       }).then((r) => r.json());
       if (!u.sub) throw new Error('google_profile');
-      return { id: `google:${u.sub}`, name: u.name || 'Google user', avatar: u.picture || '', provider: 'google' };
+      // handle: для Google показываем e-mail, для остальных — @username.
+      return { id: `google:${u.sub}`, name: u.name || 'Google user', avatar: u.picture || '', provider: 'google', handle: u.email || '' };
     },
   },
   github: {
@@ -54,7 +55,7 @@ const PROVIDERS = {
         headers: { Authorization: `Bearer ${t.access_token}`, 'User-Agent': 'kulshgpt', Accept: 'application/vnd.github+json' },
       }).then((r) => r.json());
       if (!u.id) throw new Error('github_profile');
-      return { id: `github:${u.id}`, name: u.name || u.login, avatar: u.avatar_url || '', provider: 'github' };
+      return { id: `github:${u.id}`, name: u.name || u.login, avatar: u.avatar_url || '', provider: 'github', handle: u.login ? `@${u.login}` : '' };
     },
   },
 };
@@ -109,7 +110,7 @@ export default async function handler(req) {
     let data; try { data = await req.json(); } catch { return json({ error: 'bad_json' }, 400); }
     if (!(await verifyTelegram(data, env.TELEGRAM_BOT_TOKEN.trim()))) return json({ error: 'bad_signature' }, 401);
     const name = [data.first_name, data.last_name].filter(Boolean).join(' ') || data.username || 'Telegram user';
-    const user = { id: `telegram:${data.id}`, name, avatar: data.photo_url || '', provider: 'telegram' };
+    const user = { id: `telegram:${data.id}`, name, avatar: data.photo_url || '', provider: 'telegram', handle: data.username ? `@${data.username}` : '' };
     return json({ user }, 200, { 'Set-Cookie': setCookie(SESSION_COOKIE, await signSession(user, env.AUTH_SECRET), { req }) });
   }
 

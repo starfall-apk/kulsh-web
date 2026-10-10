@@ -10,24 +10,15 @@
 // и закрываем стрим, не дожидаясь таймаута Vercel.
 
 import { readSession } from './_session.js';
+import { GUEST_MODEL, FALLBACK_MODEL, isAllowed, modelInfo } from './_models.js';
+import { PROVIDERS, canonicalMessages } from './_providers.js';
+import { guestIdentity, readUsage, hasRoom, charge } from './_usage.js';
 
 export const config = { runtime: 'edge' };
 
-// Гости: только эта модель, без вложений и кастомизации, короткая история.
-const GUEST_MODEL = 'gemini-3.5-flash-lite';
+// Гости: только одна модель, без вложений и кастомизации, короткая история.
 const GUEST_MAX_MESSAGES = 20;
 
-const ALLOWED_MODELS = new Set([
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-3.5-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-3.6-flash',
-  'gemini-3.7-flash',
-  'gemini-3.8-flash',
-]);
-
-const FALLBACK_MODEL = 'gemini-2.5-flash';
 
 // Общий бюджет функции. Vercel Edge режет на ~25с, ставим 22с с запасом.
 const BUDGET_MS = 22000;
@@ -129,71 +120,20 @@ function recallNote({ newMedia, recallPass, hasOldMedia }) {
   return 'МЕДИА. Вложений в чате нет, маркер !recall_media не используй.';
 }
 
-function pickKeys(env) {
-  const keys = [];
-  for (let i = 1; i <= 5; i++) {
-    const k = env[`APIKEY${i}`];
-    if (k && k.trim()) keys.push(k.trim());
-  }
-  return keys;
-}
-
-function toContents(messages) {
-  const out = [];
-  for (const m of messages) {
-    if (m.role !== 'user' && m.role !== 'assistant') continue;
-    const parts = [];
-    if (m.content && String(m.content).trim()) parts.push({ text: String(m.content) });
-    if (Array.isArray(m.attachments)) {
-      for (const a of m.attachments) {
-        if (a && a.data && a.mimeType) {
-          parts.push({ inline_data: { mime_type: a.mimeType, data: a.data } });
-        }
-      }
-    }
-    if (!parts.length) continue;
-    out.push({ role: m.role === 'assistant' ? 'model' : 'user', parts });
-  }
-  return out;
-}
-
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 
 // ВСЕГДА отдаём ошибки как SSE — иначе клиент не увидит текст и покажет generic.
-function sseError(message) {
+function sseError(message, extraHeaders = {}) {
   const body = `data: ${JSON.stringify({ error: message })}\n\ndata: {"done":true}\n\n`;
   return new Response(body, {
     headers: {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'X-Accel-Buffering': 'no',
+      ...extraHeaders,
     },
   });
-}
-
-const SAFETY = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH',
-  'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT']
-  .map((category) => ({ category, threshold: 'BLOCK_ONLY_HIGH' }));
-
-// Открывает стрим у Gemini. Бросает {retry, status, detail} при неудаче.
-async function openStream(key, model, contents, systemText, temperature, signal) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemText }] },
-      contents,
-      generationConfig: { temperature, maxOutputTokens: 8192 },
-      safetySettings: SAFETY,
-    }),
-  });
-  if (res.ok && res.body) return res;
-  const detail = await res.text().catch(() => '');
-  const retry = res.status === 429 || res.status >= 500 || res.status === 403;
-  throw { retry, status: res.status, detail };
 }
 
 export default async function handler(req) {
@@ -207,21 +147,44 @@ export default async function handler(req) {
 
   const user = await readSession(req);
   const guest = !user;
-  let { messages, model, temperature: rawTemp, customPrompt, recall, hasOldMedia } = body || {};
+  let { messages, model, temperature: rawTemp, customPrompt, skillsPrompt, recall, hasOldMedia } = body || {};
   if (guest) {
-    model = GUEST_MODEL; customPrompt = ''; rawTemp = 0.9; recall = false; hasOldMedia = false;
+    model = GUEST_MODEL; customPrompt = ''; skillsPrompt = ''; rawTemp = 0.9; recall = false; hasOldMedia = false;
     if (Array.isArray(messages)) {
       messages = messages.slice(-GUEST_MAX_MESSAGES).map((m) => ({ ...m, attachments: [] }));
     }
   }
   const temperature = Math.min(1.5, Math.max(0, Number.isFinite(+rawTemp) ? +rawTemp : 0.9));
-  const contents = Array.isArray(messages) ? toContents(messages) : [];
+  const contents = Array.isArray(messages) ? canonicalMessages(messages) : [];
   if (!contents.length) return sseError('Пустой запрос — нет текста и вложений.');
 
-  const selectedModel = ALLOWED_MODELS.has(model) ? model : FALLBACK_MODEL;
-  const keys = pickKeys(process.env);
-  if (!keys.length) {
-    return sseError('Нет API-ключей. Добавь переменные окружения APIKEY1..APIKEY5 в настройках Vercel и сделай Redeploy.');
+  const selectedModel = isAllowed(model) ? model : FALLBACK_MODEL;
+  const selectedInfo = modelInfo(selectedModel);
+
+  // Модели без зрения не принимают вложения — предупреждаем сразу.
+  const hasAnyMedia = contents.some((m) => m.media && m.media.length);
+  if (hasAnyMedia && selectedInfo && selectedInfo.vision === false) {
+    return sseError(`${selectedInfo.label} не поддерживает изображения и файлы. Выбери модель со зрением или убери вложения.`);
+  }
+
+  // ---- Бесплатный лимит (Usage) ----
+  // Гость опознаётся по подписанной cookie; залогиненный — по сессии.
+  let usageHeaders = {};
+  let usageCtx;
+  if (guest) {
+    const g = await guestIdentity(req, process.env);
+    if (g.setCookie) usageHeaders = { 'Set-Cookie': g.setCookie };
+    usageCtx = { kind: 'guest', id: g.id };
+  } else {
+    usageCtx = { kind: 'user', id: user.id };
+  }
+  const points = (selectedInfo && selectedInfo.points) || 1;
+  const usage = await readUsage(process.env, usageCtx);
+  if (!hasRoom(usage, points)) {
+    const msg = guest
+      ? 'Дневной лимит гостя исчерпан (10 сообщений). Войди в аккаунт, чтобы продолжить.'
+      : 'Дневной бесплатный лимит исчерпан. Пополни баланс или подожди до сброса.';
+    return sseError(msg, usageHeaders);
   }
 
   const lastUser = Array.isArray(messages) ? [...messages].reverse().find((m) => m && m.role === 'user') : null;
@@ -231,13 +194,25 @@ export default async function handler(req) {
   if (typeof customPrompt === 'string' && customPrompt.trim()) {
     systemText += '\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ ПОЛЬЗОВАТЕЛЯ (стиль и предпочтения; не отменяют правила выше):\n' + customPrompt.trim().slice(0, 1500);
   }
-
-  // Ротируем стартовый ключ, чтобы нагрузка делилась между участниками.
-  const start = Math.floor(Math.random() * keys.length);
-  const order = keys.map((_, i) => keys[(start + i) % keys.length]);
+  // Скиллы — включённые пользователем роли/инструкции (встроенные или свои).
+  if (typeof skillsPrompt === 'string' && skillsPrompt.trim()) {
+    systemText += '\n\nАКТИВНЫЕ СКИЛЛЫ (следуй им в этом диалоге; они не отменяют правила выше):\n' + skillsPrompt.trim().slice(0, 6000);
+  }
 
   const modelsToTry = [selectedModel];
   if (!guest && selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
+
+  // Какие env-переменные нужны для выбранных моделей (для понятной ошибки).
+  const neededEnv = [...new Set(
+    modelsToTry.map((m) => PROVIDERS[modelInfo(m).provider]).filter(Boolean).flatMap((p) => p.envKeys),
+  )];
+  const anyKeys = modelsToTry.some((m) => {
+    const p = PROVIDERS[modelInfo(m).provider];
+    return p && p.keys(process.env).length > 0;
+  });
+  if (!anyKeys) {
+    return sseError(`Нет API-ключей. Добавь переменные окружения ${neededEnv.join(', ')} в настройках Vercel и сделай Redeploy.`);
+  }
 
   // ---- Обработка разрыва соединения клиентом (кнопка «стоп») ----
   const clientSignal = req.signal;
@@ -262,17 +237,28 @@ export default async function handler(req) {
   }
 
   let lastErr = null;
+  let activeProvider = null;
   const tried = [];
 
   outer:
   for (const mdl of modelsToTry) {
     if (clientGone) break;
+    const info = modelInfo(mdl);
+    const provider = PROVIDERS[info.provider];
+    if (!provider) continue;
+    const keys = provider.keys(process.env);
+    if (!keys.length) { tried.push({ model: mdl, provider: info.provider, result: 'no-key' }); continue; }
+
+    // Ротируем стартовый ключ, чтобы нагрузка делилась между участниками.
+    const start = Math.floor(Math.random() * keys.length);
+    const order = keys.map((_, i) => keys[(start + i) % keys.length]);
+
     for (let ki = 0; ki < order.length; ki++) {
       if (clientGone) break outer;
 
       const remain = deadline - Date.now();
       if (remain <= PER_KEY_OPEN_TIMEOUT_MS) {
-        tried.push({ model: mdl, key: `#${ki + 1}`, result: 'skipped:time-budget' });
+        tried.push({ model: mdl, provider: info.provider, key: `#${ki + 1}`, result: 'skipped:time-budget' });
         break outer;
       }
 
@@ -280,11 +266,22 @@ export default async function handler(req) {
       upstreamCtrls.add(ctrl);
       const timer = setTimeout(() => ctrl.abort(), PER_KEY_OPEN_TIMEOUT_MS);
       try {
-        upstream = await openStream(order[ki], mdl, contents, systemText, temperature, ctrl.signal);
+        const res = await provider.open({
+          model: mdl, key: order[ki], messages: contents, systemText, temperature,
+          signal: ctrl.signal, env: process.env,
+        });
         clearTimeout(timer);
         upstreamCtrls.delete(ctrl);
-        tried.push({ model: mdl, key: `#${ki + 1}`, result: 'ok' });
-        break outer;
+        if (res.ok && res.body) {
+          upstream = res; activeProvider = provider;
+          tried.push({ model: mdl, provider: info.provider, key: `#${ki + 1}`, result: 'ok' });
+          break outer;
+        }
+        const detail = await res.text().catch(() => '');
+        const retry = res.status === 429 || res.status >= 500 || res.status === 403;
+        lastErr = { retry, status: res.status, detail };
+        tried.push({ model: mdl, provider: info.provider, key: `#${ki + 1}`, result: 'http:' + res.status });
+        if (!retry) break; // этот ключ/модель отклонили запрос — пробуем следующую модель
       } catch (e) {
         clearTimeout(timer);
         upstreamCtrls.delete(ctrl);
@@ -293,11 +290,10 @@ export default async function handler(req) {
         const status = e && e.status;
         if (clientGone) break outer;
         tried.push({
-          model: mdl, key: `#${ki + 1}`,
+          model: mdl, provider: info.provider, key: `#${ki + 1}`,
           result: isAbort ? 'timeout' : ('http:' + (status || 'network')),
         });
-        if (isAbort || !e || e.retry === undefined || e.retry) continue;
-        break;
+        if (!isAbort && e && e.retry === false) break;
       }
     }
   }
@@ -308,15 +304,16 @@ export default async function handler(req) {
 
   if (!upstream) {
     const status = lastErr && lastErr.status;
-    let msg = 'Все ключи сейчас недоступны (лимиты или перегрузка). Попробуй через минуту.';
+    let msg = 'Все модели сейчас недоступны (лимиты или перегрузка). Попробуй через минуту.';
     if (status === 400 || status === 404) {
       msg = 'Эта модель недоступна для текущих API-ключей. Выбери другую модель в списке.';
-    } else if (status === 403) {
-      msg = 'API-ключи не имеют доступа к Gemini. Проверь, что APIKEY1..APIKEY5 действительны и включены в Google AI Studio.';
+    } else if (status === 401 || status === 403) {
+      msg = 'API-ключ не имеет доступа к модели. Проверь ключи в настройках Vercel и сделай Redeploy.';
     } else if (lastErr && lastErr.detail) {
       try {
         const d = JSON.parse(lastErr.detail);
-        if (d && d.error && d.error.message) msg = `Ошибка Gemini: ${d.error.message}`;
+        const m = d && ((d.error && d.error.message) || d.message);
+        if (m) msg = `Ошибка провайдера: ${m}`;
       } catch { /* detail — не JSON */ }
     }
     console.error('[chat] all upstream attempts failed', { tried, lastStatus: status, elapsedMs: Date.now() - startedAt });
@@ -362,13 +359,9 @@ export default async function handler(req) {
               if (!payload || payload === '[DONE]') continue;
               let data;
               try { data = JSON.parse(payload); } catch { continue; }
-              const br = data && data.promptFeedback && data.promptFeedback.blockReason;
-              if (br) blocked = br;
-              const cand = data && data.candidates && data.candidates[0];
-              if (cand && cand.finishReason && cand.finishReason !== 'STOP' && cand.finishReason !== 'MAX_TOKENS' && !(cand.content && cand.content.parts && cand.content.parts.length)) {
-                blocked = blocked || cand.finishReason;
-              }
-              const raw = ((cand && cand.content && cand.content.parts) || []).map((p) => p.text || '').join('');
+              const ev = activeProvider.parseEvent(data);
+              if (ev && ev.blocked) blocked = ev.blocked;
+              const raw = (ev && ev.text) || '';
               const text = raw ? markFilter.push(raw) : '';
               if (text) { total += text.length; send({ delta: text }); }
             }
@@ -390,8 +383,13 @@ export default async function handler(req) {
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
         } else if (total === 0 && blocked) {
           send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
+        } else {
+          // Успешный ответ — только теперь списываем очки лимита.
+          // При пустом ответе/ошибке сервиса лимит не трогаем.
+          const newUsed = await charge(process.env, { ...usageCtx, points }).catch(() => null);
+          send({ done: true, usage: { points, used: newUsed, limit: usage.limit } });
         }
-        send({ done: true });
+        if (total === 0) send({ done: true });
       } catch (err) {
         if (!(err && err.name === 'AbortError') && !clientGone) {
           console.error('[chat] stream read error', err);
@@ -411,6 +409,7 @@ export default async function handler(req) {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
       'X-Accel-Buffering': 'no',
+      ...usageHeaders,
     },
   });
 }

@@ -4,25 +4,25 @@
 
 /* ---------- Design tokens ---------- */
 :root {
-  --md-surface: #141019;
-  --md-surface-dim: #0e0b13;
-  --md-surface-container-lowest: #0b0910;
-  --md-surface-container-low: #1a1620;
-  --md-surface-container: #201b29;
-  --md-surface-container-high: #2b2434;
-  --md-surface-container-highest: #362e40;
+  --md-surface: #100D16;
+  --md-surface-dim: #0A0810;
+  --md-surface-container-lowest: #08060D;
+  --md-surface-container-low: #15111D;
+  --md-surface-container: #1B1624;
+  --md-surface-container-high: #241E2E;
+  --md-surface-container-highest: #2E2738;
 
   --md-on-surface: #ECE6F5;
-  --md-on-surface-variant: #B0A8C0;
-  --md-outline: #4A4258;
-  --md-outline-variant: #322b3d;
+  --md-on-surface-variant: #ADA4BE;
+  --md-outline: #453D53;
+  --md-outline-variant: #2C2537;
 
   --md-primary: #B98CFF;
   --md-on-primary: #2A0F5C;
   --md-primary-container: #3D2470;
   --md-on-primary-container: #E4D3FF;
 
-  --md-secondary-container: #2D2739;
+  --md-secondary-container: #292334;
   --md-on-secondary-container: #D8CFE6;
 
   --md-shadow: rgba(0,0,0,.5);

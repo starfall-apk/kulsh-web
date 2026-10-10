@@ -6,6 +6,7 @@
 //   GET  /api/sync → { enabled, chats:[...], deleted:{id:ts}, settings, settingsAt }
 //   POST /api/sync ← { chats:[...], deleted:{id:ts}, settings?, settingsAt? }
 import { readSession } from './_session.js';
+import { backend, pipeline } from './_store.js';
 
 export const config = { runtime: 'edge' };
 
@@ -16,23 +17,6 @@ const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-
-function backend(env) {
-  const url = (env.KV_REST_API_URL || env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
-  const token = env.KV_REST_API_TOKEN || env.UPSTASH_REDIS_REST_TOKEN || '';
-  return url && token ? { url, token } : null;
-}
-
-async function pipeline(b, cmds) {
-  const r = await fetch(`${b.url}/pipeline`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${b.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmds),
-  });
-  if (!r.ok) throw new Error('redis_' + r.status);
-  const out = await r.json();
-  return out.map((x) => { if (x.error) throw new Error(x.error); return x.result; });
-}
 
 // HGETALL в REST приходит плоским массивом [поле, значение, ...]
 const toObj = (a) => {

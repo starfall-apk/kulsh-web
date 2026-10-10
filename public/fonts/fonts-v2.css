@@ -1,4 +1,4 @@
-/* Локальные шрифты KulshGPT — грузятся вместе с сайтом, без обращений к fonts.googleapis.com.
+/* Локальные шрифты KulshAI — грузятся вместе с сайтом, без обращений к fonts.googleapis.com.
    Google Sans Flex и Google Sans Code не содержат кириллицу, поэтому для русского текста
    в стеке стоят Roboto Flex / Roboto Mono (кириллические подмножества). */
 

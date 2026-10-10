@@ -241,3 +241,127 @@
 .consent-actions .btn { width: 100%; height: 48px; }
 .consent-later { height: 40px; color: var(--md-on-surface-variant); font-size: .85rem; border-radius: 999px; }
 .consent-later:hover { background: color-mix(in srgb, var(--md-on-surface) 6%, transparent); }
+
+/* ===== ACCOUNT + SETTINGS MENU (popover / bottom-sheet) ===== */
+.acct-backdrop {
+  position: fixed; inset: 0; z-index: 60; background: transparent;
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--dur-m) var(--ease-standard), visibility var(--dur-m), background var(--dur-m);
+}
+.acct-backdrop.is-open { opacity: 1; visibility: visible; }
+
+.acct-menu {
+  position: fixed; z-index: 61;
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(560px, calc(100vh - 24px));
+  overflow: hidden auto; overscroll-behavior: contain;
+  padding: 10px;
+  border-radius: 24px;
+  background: var(--md-surface-container-high);
+  border: 1px solid color-mix(in srgb, var(--md-on-surface) 10%, transparent);
+  box-shadow: 0 20px 50px var(--md-shadow), 0 2px 8px color-mix(in srgb, var(--md-shadow) 60%, transparent);
+  display: flex; flex-direction: column; gap: 6px;
+  opacity: 0; visibility: hidden;
+  transform: translateY(8px) scale(.97); transform-origin: bottom left;
+  transition: opacity var(--dur-m) var(--ease-emphasized), transform var(--dur-m) var(--ease-emphasized), visibility var(--dur-m);
+  will-change: transform, opacity;
+}
+.acct-menu.is-open { opacity: 1; visibility: visible; transform: none; }
+
+/* Шапка: аватар, имя, @handle, чип провайдера */
+.acct-head { display: flex; align-items: center; gap: 12px; padding: 8px 10px 10px; }
+.acct-avatar { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+.acct-av { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: block; }
+.acct-av.av-fallback { background: var(--md-primary); color: var(--md-on-primary); display: grid; place-items: center; font-weight: 600; font-size: 1.1rem; }
+.acct-id { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.acct-name { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct-handle { color: var(--md-on-surface-variant); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct-provider {
+  display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+  padding: 4px 9px; border-radius: 999px;
+  background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+  font-size: .68rem; color: var(--md-on-surface-variant);
+}
+.acct-provider svg { width: 14px; height: 14px; display: block; }
+
+/* Полоса дневного лимита */
+.acct-usage {
+  padding: 10px 12px; border-radius: 16px;
+  background: color-mix(in srgb, var(--md-primary) 8%, transparent);
+  display: grid; gap: 7px;
+}
+.acct-usage-top { display: flex; justify-content: space-between; font-size: .78rem; color: var(--md-on-surface-variant); }
+.acct-usage-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--md-on-surface); }
+.acct-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--md-on-surface) 12%, transparent); overflow: hidden; }
+.acct-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--md-primary); transition: width .6s var(--ease-emphasized), background var(--dur-m); }
+.acct-bar.is-warn > span { background: #E9A23B; }
+.acct-bar.is-danger > span { background: var(--md-error); }
+.acct-usage-sub { display: flex; justify-content: space-between; font-size: .72rem; color: var(--md-on-surface-variant); }
+
+/* Заглушка баланса (общий для чата и API) */
+.acct-balance { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: .8rem; color: var(--md-on-surface-variant); }
+.acct-balance .material-symbols-rounded { font-size: 18px; color: var(--md-primary); }
+.acct-soon { margin-left: auto; font-size: .68rem; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+
+/* Пункты меню */
+.acct-list { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid color-mix(in srgb, var(--md-on-surface) 8%, transparent); padding-top: 6px; }
+.acct-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; height: 44px;
+  padding: 0 12px; border-radius: 14px; border: none; background: none;
+  color: var(--md-on-surface); font-size: .9rem; text-align: left; cursor: pointer;
+  text-decoration: none;
+  transition: background var(--dur-s) var(--ease-standard), color var(--dur-s);
+}
+.acct-item:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+.acct-item:active { background: color-mix(in srgb, var(--md-on-surface) 14%, transparent); }
+.acct-item > .material-symbols-rounded { font-size: 20px; color: var(--md-on-surface-variant); flex-shrink: 0; transition: color var(--dur-s); }
+.acct-item-static, .acct-item-static:hover { background: none; cursor: default; }
+.acct-chevron { margin-left: auto; transition: transform var(--dur-m) var(--ease-emphasized); }
+.acct-item-toggle.is-open .acct-chevron { transform: rotate(180deg); }
+.acct-item-danger { color: var(--md-error); }
+.acct-item-danger > .material-symbols-rounded { color: var(--md-error); }
+.acct-item-danger:hover { background: var(--md-error-container); color: var(--md-on-error-container); }
+.acct-item-danger:hover > .material-symbols-rounded { color: var(--md-on-error-container); }
+
+/* Переключатель языка внутри пункта */
+.acct-seg { margin-left: auto; display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: color-mix(in srgb, var(--md-on-surface) 10%, transparent); }
+.acct-seg button {
+  border: none; background: none; color: var(--md-on-surface-variant);
+  font-size: .72rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+  transition: background var(--dur-s) var(--ease-standard), color var(--dur-s);
+}
+.acct-seg button.is-active { background: var(--md-primary); color: var(--md-on-primary); }
+
+/* Раскрывающийся блок «Подробнее» */
+.acct-sub { display: flex; flex-direction: column; gap: 2px; padding: 2px 0 4px; animation: acctSlide .3s var(--ease-emphasized) both; }
+.acct-sub[hidden] { display: none; }
+@keyframes acctSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.acct-subitem {
+  display: flex; align-items: center; gap: 12px; height: 40px;
+  padding: 0 12px 0 24px; border-radius: 14px; border: none; background: none;
+  color: var(--md-on-surface-variant); font-size: .85rem; text-align: left; cursor: pointer;
+  text-decoration: none;
+  transition: background var(--dur-s) var(--ease-standard), color var(--dur-s);
+}
+.acct-subitem:hover { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); color: var(--md-on-surface); }
+.acct-subitem > .material-symbols-rounded { font-size: 18px; }
+
+/* Мобильный вариант — нижний лист с ручкой */
+@media (max-width: 620px) {
+  .acct-backdrop.is-open { background: var(--md-scrim); }
+  .acct-menu {
+    left: 0 !important; right: 0 !important; top: auto !important; bottom: 0 !important;
+    width: 100%; max-width: none; max-height: 82vh;
+    border-radius: 26px 26px 0 0; border-bottom: none;
+    padding: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(100%); transform-origin: bottom center;
+  }
+  .acct-menu.is-open { transform: none; }
+  .acct-menu::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--md-on-surface) 22%, transparent); margin: 6px auto 10px; }
+  .acct-item { height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acct-menu, .acct-bar > span, .acct-chevron { transition: none; }
+  .acct-sub { animation: none; }
+}

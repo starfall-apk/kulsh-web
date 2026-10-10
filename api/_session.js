@@ -44,4 +44,24 @@ export function setCookie(name, value, { maxAge = 30 * DAY, req } = {}) {
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
+// Универсальная подпись произвольного значения (используется для id гостя и т.п.).
+export async function signValue(value, secret, days = 365) {
+  const payload = b64u(enc.encode(JSON.stringify({ v: value, exp: Math.floor(Date.now() / 1000) + days * DAY })));
+  const sig = await crypto.subtle.sign('HMAC', await hmacKey(secret), enc.encode(payload));
+  return `${payload}.${b64u(sig)}`;
+}
+
+export async function readValue(raw, secret) {
+  if (!secret || !raw) return null;
+  const [payload, sig] = raw.split('.');
+  if (!payload || !sig) return null;
+  try {
+    const ok = await crypto.subtle.verify('HMAC', await hmacKey(secret), unb64u(sig), enc.encode(payload));
+    if (!ok) return null;
+    const data = JSON.parse(new TextDecoder().decode(unb64u(payload)));
+    if (!data.exp || data.exp < Date.now() / 1000) return null;
+    return data.v ?? null;
+  } catch { return null; }
+}
+
 export const SESSION_COOKIE = COOKIE;
