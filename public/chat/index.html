@@ -148,6 +148,8 @@
 
         <div class="attachment-tray" id="attachmentTray"></div>
 
+        <div class="mention-menu" id="mentionMenu" role="listbox" aria-label="Skills"></div>
+
         <div class="composer-row">
           <button class="icon-btn composer-attach" id="attachBtn" type="button" aria-label="Прикрепить файл">
             <span class="material-symbols-rounded">attach_file</span>
@@ -405,12 +407,22 @@
     <h3 class="skills-group" data-i18n="skills.mine"></h3>
     <div class="skills-list" id="skillsMine"></div>
     <p class="skills-hint" id="skillsGuestHint" hidden data-i18n="skills.guestHint"></p>
-    <button class="btn btn-tonal skills-add" id="skillsAddBtn" type="button">
-      <span class="material-symbols-rounded">add</span><span data-i18n="skills.add"></span>
-    </button>
+    <div class="skills-actions">
+      <button class="btn btn-tonal skills-add" id="skillsAddBtn" type="button">
+        <span class="material-symbols-rounded">add</span><span data-i18n="skills.add"></span>
+      </button>
+      <button class="btn btn-tonal skills-add" id="skillsUploadBtn" type="button">
+        <span class="material-symbols-rounded">upload_file</span><span data-i18n="skills.upload"></span>
+      </button>
+      <input type="file" id="skillsFile" accept=".md,.markdown,.txt" hidden />
+    </div>
     <div class="skills-form" id="skillsForm" hidden>
-      <input class="text-input" id="skillTitle" maxlength="60" data-i18n-placeholder="skills.namePh" />
-      <textarea class="text-area" id="skillContent" rows="6" maxlength="8000" data-i18n-placeholder="skills.bodyPh"></textarea>
+      <div class="skills-form-row">
+        <input class="text-input" id="skillTitle" maxlength="60" data-i18n-placeholder="skills.namePh" />
+        <input class="text-input skills-id-input" id="skillId" maxlength="32" data-i18n-placeholder="skills.idPh" />
+      </div>
+      <p class="skills-id-hint" data-i18n="skills.idHint"></p>
+      <textarea class="text-area" id="skillContent" rows="6" maxlength="20000" data-i18n-placeholder="skills.bodyPh"></textarea>
       <div class="skills-form-actions">
         <button class="btn" id="skillCancelBtn" type="button" data-i18n="skills.cancel"></button>
         <button class="btn btn-filled" id="skillSaveBtn" type="button" data-i18n="skills.save"></button>
@@ -418,6 +430,33 @@
     </div>
     <p class="skills-error" id="skillsError" hidden></p>
   </div>
+</div>
+
+<!-- ============ PREVIEW DIALOG (скиллы и файлы) ============ -->
+<div class="dialog-backdrop" id="previewBackdrop"></div>
+<div class="dialog preview-dialog" id="previewDialog" role="dialog" aria-modal="true">
+  <div class="dialog-header preview-header">
+    <div class="preview-head">
+      <span class="material-symbols-rounded preview-ico" id="previewIcon">description</span>
+      <div class="preview-head-text">
+        <h2 id="previewTitle"></h2>
+        <span class="preview-sub" id="previewSubtitle"></span>
+      </div>
+    </div>
+    <div class="preview-head-actions">
+      <div class="segmented" id="previewSeg" hidden>
+        <button class="segmented-btn is-active" data-view="code" data-i18n="preview.code">Код</button>
+        <button class="segmented-btn" data-view="render" data-i18n="preview.preview">Предпросмотр</button>
+      </div>
+      <button class="btn btn-tonal btn-sm" id="previewDownload" type="button" data-i18n-aria="preview.download" aria-label="Скачать">
+        <span class="material-symbols-rounded">download</span>
+      </button>
+      <button class="icon-btn" id="previewClose" type="button" aria-label="Закрыть">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+  </div>
+  <div class="dialog-body preview-body" id="previewBody"></div>
 </div>
 
 <script src="/lottie.min.js"></script>

@@ -1458,3 +1458,116 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
   .error-mascot { width: 44px; height: 52px; }
   .todo { --todo-pad: 12px; }
 }
+
+/* ===== СКРЫТЫЕ СТРЕЛКИ СКРОЛЛБАРА (в т.ч. в списке моделей) ===== */
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:double-button,
+*::-webkit-scrollbar-button:vertical:start,
+*::-webkit-scrollbar-button:vertical:end,
+*::-webkit-scrollbar-button:horizontal:start,
+*::-webkit-scrollbar-button:horizontal:end {
+  display: none !important; width: 0 !important; height: 0 !important;
+  -webkit-appearance: none; background: transparent;
+}
+.model-picker-menu { scrollbar-width: thin; }
+
+/* ===== КОПИРОВАНИЕ: всплывающая надпись «Скопировано» ===== */
+.msg-actions { position: relative; }
+.copy-flash {
+  align-self: center; margin-left: 2px; font-size: .74rem; font-weight: 600;
+  color: var(--md-primary); white-space: nowrap;
+  opacity: 0; transform: translateX(-3px);
+  transition: opacity var(--dur-s) var(--ease-standard), transform var(--dur-s) var(--ease-standard);
+  pointer-events: none;
+}
+.copy-flash.is-on { opacity: 1; transform: none; }
+
+/* ===== РЕДАКТИРОВАНИЕ СООБЩЕНИЯ ===== */
+.msg-edit { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.msg-edit-input {
+  width: 100%; min-height: 72px; max-height: 360px; resize: vertical;
+  background: var(--md-surface-container); color: var(--md-on-surface);
+  border: 1px solid var(--md-primary); border-radius: var(--r-md);
+  padding: 10px 12px; font: inherit; font-size: .95rem; line-height: 1.55; outline: none;
+}
+.msg-edit-actions { display: flex; gap: 8px; }
+
+/* ===== ПАНЕЛЬ ФАЙЛОВ И «ПРОДОЛЖИТЬ» ===== */
+.msg-files-bar { display: flex; gap: 8px; margin-top: 8px; }
+.msg-files-bar .material-symbols-rounded, .msg-continue .material-symbols-rounded { font-size: 18px; }
+.msg-continue { margin-top: 10px; }
+
+/* ===== ПРЕДПРОСМОТР (скиллы и файлы) ===== */
+.preview-dialog { width: min(860px, 95vw); height: min(80vh, 760px); display: flex; flex-direction: column; }
+.preview-header { align-items: flex-start; gap: 12px; }
+.preview-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.preview-ico {
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; font-size: 22px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--md-primary) 14%, transparent); color: var(--md-primary);
+}
+.preview-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.preview-head-text h2 { font-size: 1.02rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-sub { font-size: .76rem; color: var(--md-on-surface-variant); }
+.preview-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.preview-head-actions [hidden] { display: none !important; }
+.preview-body { flex: 1; min-height: 0; overflow: auto; padding: 0 2px 4px; }
+.preview-code {
+  margin: 0; padding: 14px; border-radius: var(--r-md);
+  background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant);
+  font-family: var(--font-mono); font-size: .82rem; line-height: 1.55;
+  white-space: pre; overflow-x: auto;
+}
+.md-preview { padding: 6px 4px; line-height: 1.65; }
+.md-preview h1, .md-preview h2, .md-preview h3 { margin: .7em 0 .35em; }
+.md-preview pre { background: var(--md-surface-container-low); padding: 12px; border-radius: var(--r-sm); overflow-x: auto; }
+.md-preview code { font-family: var(--font-mono); font-size: .85em; }
+.md-preview ul, .md-preview ol { padding-left: 1.4em; }
+.html-preview {
+  width: 100%; height: 100%; min-height: 420px; border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-md); background: #fff;
+}
+.image-preview { max-width: 100%; height: auto; border-radius: var(--r-md); margin: 0 auto; }
+.preview-note {
+  display: flex; align-items: center; gap: 10px; padding: 16px; border-radius: var(--r-md);
+  background: var(--md-surface-container-low); color: var(--md-on-surface-variant); font-size: .88rem;
+}
+.preview-plain { white-space: pre-wrap; font-family: var(--font-mono); font-size: .82rem; }
+
+/* ===== СКИЛЛЫ: id, аплоад ===== */
+.skills-id {
+  font-family: var(--font-mono); font-size: .72rem; color: var(--md-primary);
+  margin-top: 2px;
+}
+.skills-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.skills-actions .skills-add { margin-top: 0; }
+.skills-form-row { display: flex; gap: 10px; }
+.skills-form-row .skills-id-input { max-width: 220px; }
+.skills-id-hint { font-size: .74rem; color: var(--md-on-surface-variant); line-height: 1.45; margin: -2px 2px 0; }
+
+/* ===== МЕНЮ @-УПОМИНАНИЙ ===== */
+.mention-menu {
+  position: absolute; left: 12px; right: 12px; bottom: calc(100% - 4px); z-index: 25;
+  max-height: 280px; overflow-y: auto;
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--r-lg);
+  box-shadow: 0 14px 38px var(--md-shadow);
+  padding: 6px;
+  opacity: 0; visibility: hidden; transform: translateY(6px);
+  transition: opacity var(--dur-m) var(--ease-emphasized), transform var(--dur-m) var(--ease-emphasized), visibility var(--dur-m);
+}
+.mention-menu.is-open { opacity: 1; visibility: visible; transform: none; }
+.mention-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border-radius: var(--r-sm); text-align: left;
+}
+.mention-item .material-symbols-rounded { font-size: 20px; color: var(--md-primary); flex-shrink: 0; }
+.mention-item.is-active, .mention-item:hover { background: color-mix(in srgb, var(--md-primary) 12%, transparent); }
+.mention-txt { display: flex; flex-direction: column; min-width: 0; }
+.mention-name { font-size: .86rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mention-id { font-family: var(--font-mono); font-size: .72rem; color: var(--md-on-surface-variant); }
+
+.composer { position: relative; }
+

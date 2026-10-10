@@ -7,18 +7,18 @@
   // ============================================================
   const MODELS = [
     // ---- Google Gemini ----
-    { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',      provider: 'google', vision: true,  points: 1,   icon: 'bolt',         tone: 'amber', desc: { ru: 'Стабильная, быстрая модель', en: 'Stable, fast model' } },
-    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'google', vision: true,  points: 1,   icon: 'flash_on',     tone: 'sky',   desc: { ru: 'Самая быстрая и лёгкая', en: 'Fastest and lightest' } },
-    { id: 'gemini-3.5-flash',      name: 'Gemini 3.5 Flash',      provider: 'google', vision: true,  points: 1.5, icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Баланс скорости и качества', en: 'Balance of speed and quality' } },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', provider: 'google', vision: true,  points: 1.5, icon: 'speed',        tone: 'sky',   desc: { ru: 'Облегчённая версия 3.5', en: 'Lightweight 3.5 variant' } },
-    { id: 'gemini-3.6-flash',      name: 'Gemini 3.6 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Улучшенное рассуждение', en: 'Improved reasoning' } },
-    { id: 'gemini-3.7-flash',      name: 'Gemini 3.7 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Новее и точнее', en: 'Newer and more accurate' } },
-    { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      provider: 'google', vision: true,  points: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
+    { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash',      provider: 'google', vision: true,  mult: 1,   icon: 'bolt',         tone: 'amber', desc: { ru: 'Стабильная, быстрая модель', en: 'Stable, fast model' } },
+    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', provider: 'google', vision: true,  mult: 1,   icon: 'flash_on',     tone: 'sky',   desc: { ru: 'Самая быстрая и лёгкая', en: 'Fastest and lightest' } },
+    { id: 'gemini-3.5-flash',      name: 'Gemini 3.5 Flash',      provider: 'google', vision: true,  mult: 1.5, icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Баланс скорости и качества', en: 'Balance of speed and quality' } },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', provider: 'google', vision: true,  mult: 1.5, icon: 'speed',        tone: 'sky',   desc: { ru: 'Облегчённая версия 3.5', en: 'Lightweight 3.5 variant' } },
+    { id: 'gemini-3.6-flash',      name: 'Gemini 3.6 Flash',      provider: 'google', vision: true,  mult: 3,   icon: 'auto_awesome', tone: 'mint',  desc: { ru: 'Улучшенное рассуждение', en: 'Improved reasoning' } },
+    { id: 'gemini-3.7-flash',      name: 'Gemini 3.7 Flash',      provider: 'google', vision: true,  mult: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Новее и точнее', en: 'Newer and more accurate' } },
+    { id: 'gemini-3.8-flash',      name: 'Gemini 3.8 Flash',      provider: 'google', vision: true,  mult: 3,   icon: 'auto_awesome', tone: 'rose',  desc: { ru: 'Самая новая модель линейки', en: 'The newest in the lineup' } },
     // ---- NeutralBeats ----
-    { id: 'deepseek-v4.1-flash',   name: 'DeepSeek V4.1 Flash',   provider: 'neutralbeats', vision: true,  points: 1, icon: 'psychology', tone: 'mint',  desc: { ru: 'Выгодная и умная, большой контекст', en: 'Great value, large context' } },
-    { id: 'deepseek-v4-pro',       name: 'DeepSeek V4 Pro',       provider: 'neutralbeats', vision: false, points: 2, icon: 'neurology',  tone: 'sky',   desc: { ru: 'Усиленное рассуждение, без зрения', en: 'Strong reasoning, no vision' } },
-    { id: 'glm-5.3-flash',         name: 'GLM 5.3 Flash',         provider: 'neutralbeats', vision: true,  points: 1, icon: 'bolt',       tone: 'mint',  desc: { ru: 'Быстрая и аккуратная', en: 'Fast and precise' } },
-    { id: 'kimi-k3',               name: 'Kimi K3',               provider: 'neutralbeats', vision: true,  points: 3, icon: 'star',       tone: 'amber', desc: { ru: 'Сильна в длинных текстах', en: 'Strong with long text' } },
+    { id: 'deepseek-v4.1-flash',   name: 'DeepSeek V4.1 Flash',   provider: 'neutralbeats', vision: true,  mult: 1, icon: 'psychology', tone: 'mint',  desc: { ru: 'Выгодная и умная, большой контекст', en: 'Great value, large context' } },
+    { id: 'deepseek-v4-pro',       name: 'DeepSeek V4 Pro',       provider: 'neutralbeats', vision: false, mult: 2, icon: 'neurology',  tone: 'sky',   desc: { ru: 'Усиленное рассуждение, без зрения', en: 'Strong reasoning, no vision' } },
+    { id: 'glm-5.3-flash',         name: 'GLM 5.3 Flash',         provider: 'neutralbeats', vision: true,  mult: 1, icon: 'bolt',       tone: 'mint',  desc: { ru: 'Быстрая и аккуратная', en: 'Fast and precise' } },
+    { id: 'kimi-k3',               name: 'Kimi K3',               provider: 'neutralbeats', vision: true,  mult: 3, icon: 'star',       tone: 'amber', desc: { ru: 'Сильна в длинных текстах', en: 'Strong with long text' } },
   ];
 
   // Человекочитаемые названия провайдеров для группировки в списке моделей.
@@ -187,13 +187,20 @@
     skillsBuiltin: $('#skillsBuiltin'),
     skillsMine: $('#skillsMine'),
     skillsAddBtn: $('#skillsAddBtn'),
+    skillsUploadBtn: $('#skillsUploadBtn'),
+    skillsFile: $('#skillsFile'),
     skillsForm: $('#skillsForm'),
     skillTitle: $('#skillTitle'),
+    skillId: $('#skillId'),
     skillContent: $('#skillContent'),
     skillCancelBtn: $('#skillCancelBtn'),
     skillSaveBtn: $('#skillSaveBtn'),
     skillsGuestHint: $('#skillsGuestHint'),
     skillsError: $('#skillsError'),
+
+    mentionMenu: $('#mentionMenu'),
+    previewDialog: $('#previewDialog'),
+    previewBackdrop: $('#previewBackdrop'),
   };
 
   // ============================================================
@@ -639,6 +646,254 @@
     setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
 
+  // ---------- Копирование с визуальной отдачей ----------
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    return new Promise((resolve, reject) => {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-1000px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove(); resolve();
+      } catch (e) { reject(e); }
+    });
+  }
+  function flashCopied(btn, text) {
+    copyText(text).catch(() => {});
+    const parent = btn.parentNode;
+    if (!parent) return;
+    let flash = parent.querySelector('.copy-flash');
+    if (!flash) {
+      flash = document.createElement('span');
+      flash.className = 'copy-flash';
+      parent.insertBefore(flash, btn.nextSibling);
+    }
+    flash.textContent = window.t('chat.copied');
+    flash.classList.add('is-on');
+    clearTimeout(flash._t);
+    flash._t = setTimeout(() => flash.classList.remove('is-on'), 1500);
+  }
+
+  // ---------- Безопасная отрисовка HTML (превью скиллов/файлов) ----------
+  function sanitizeHTML(html) {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    tpl.content.querySelectorAll('script,style,iframe,object,embed,link,meta,form,base').forEach((n) => n.remove());
+    tpl.content.querySelectorAll('*').forEach((n) => {
+      for (const a of Array.from(n.attributes)) {
+        const nm = a.name.toLowerCase();
+        if (nm.startsWith('on')) n.removeAttribute(a.name);
+        else if ((nm === 'href' || nm === 'src' || nm === 'xlink:href') && /^\s*(javascript|data:text\/html)/i.test(a.value)) n.removeAttribute(a.name);
+      }
+    });
+    return tpl.innerHTML;
+  }
+  function renderSafeMarkdown(md) {
+    if (!window.marked) return '<pre class="preview-plain">' + escapeHtml(md || '') + '</pre>';
+    window.marked.setOptions({ breaks: true, gfm: true });
+    try { return sanitizeHTML(window.marked.parse(md || '')); } catch { return '<pre class="preview-plain">' + escapeHtml(md || '') + '</pre>'; }
+  }
+
+  // ---------- ZIP на клиенте (store, без сжатия — зато всегда валидный) ----------
+  let crcTableCache = null;
+  function crc32(bytes) {
+    if (!crcTableCache) {
+      const t = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+      crcTableCache = t;
+    }
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = crcTableCache[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function buildZip(files) {
+    const enc = new TextEncoder();
+    const u16 = (n) => [n & 0xFF, (n >>> 8) & 0xFF];
+    const u32 = (n) => [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF];
+    const parts = [];
+    const central = [];
+    let offset = 0;
+    for (const f of files) {
+      const nameBytes = enc.encode(f.name);
+      const data = f.data || new Uint8Array(0);
+      const crc = crc32(data);
+      const size = data.length;
+      const local = new Uint8Array([
+        ...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0),
+        ...u32(crc), ...u32(size), ...u32(size), ...u16(nameBytes.length), ...u16(0),
+      ]);
+      parts.push(local, nameBytes, data);
+      const localOff = offset;
+      offset += local.length + nameBytes.length + data.length;
+      central.push(new Uint8Array([
+        ...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0),
+        ...u32(crc), ...u32(size), ...u32(size), ...u16(nameBytes.length), ...u16(0),
+        ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(localOff),
+      ]), nameBytes);
+    }
+    let cdSize = 0;
+    for (const c of central) cdSize += c.length;
+    const eocd = new Uint8Array([
+      ...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length),
+      ...u32(cdSize), ...u32(offset), ...u16(0),
+    ]);
+    return new Blob([...parts, ...central, eocd], { type: 'application/zip' });
+  }
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function fileCardBytes(card) {
+    const encoding = card.dataset.encoding;
+    const content = (card.querySelector('.file-card-content') || {}).value || '';
+    if (encoding === 'base64') {
+      try {
+        const bin = atob(content.replace(/\s+/g, ''));
+        const u = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        return u;
+      } catch { return new Uint8Array(0); }
+    }
+    return new TextEncoder().encode(content);
+  }
+  function downloadMessageZip(node) {
+    const cards = node ? node.querySelectorAll('.file-card') : [];
+    if (cards.length < 2) return;
+    const files = Array.from(cards).map((c) => ({ name: c.dataset.name || 'file', data: fileCardBytes(c) }));
+    let blob;
+    try { blob = buildZip(files); } catch (e) { console.error('[zip] failed', e); return; }
+    const chat = getActiveChat();
+    const base = (chat && chat.title ? chat.title.replace(/[\\/:*?"<>|]+/g, '').trim().slice(0, 40) : '') || 'kulsh-files';
+    triggerDownload(blob, base + '.zip');
+  }
+
+  // ---------- Универсальный предпросмотр (скиллы и файлы) ----------
+  const MIME_BY_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', ico: 'image/x-icon', avif: 'image/avif', pdf: 'application/pdf', zip: 'application/zip' };
+  const CODE_EXT = ['py', 'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'json', 'html', 'htm', 'css', 'scss', 'less', 'java', 'go', 'rs', 'c', 'h', 'cpp', 'hpp', 'cs', 'rb', 'php', 'sh', 'bash', 'zsh', 'ps1', 'sql', 'yml', 'yaml', 'toml', 'ini', 'env', 'xml', 'svg', 'txt', 'log', 'csv', 'md', 'markdown', 'bat', 'cmd', 'kt', 'swift', 'dart', 'lua', 'r', 'pl'];
+  function fileKind(name) {
+    const ext = (String(name).split('.').pop() || '').toLowerCase();
+    if (ext === 'md' || ext === 'markdown') return 'md';
+    if (ext === 'html' || ext === 'htm') return 'html';
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'].includes(ext)) return 'image';
+    if (CODE_EXT.includes(ext)) return 'code';
+    return 'binary';
+  }
+  function decodeBase64Blob(content, mime) {
+    try {
+      const bin = atob(String(content).replace(/\s+/g, ''));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: mime || 'application/octet-stream' });
+    } catch { return null; }
+  }
+
+  const Preview = {
+    state: null,
+    els: null,
+    ensure() {
+      if (this.els) return this.els;
+      const E = {
+        backdrop: $('#previewBackdrop'), dialog: $('#previewDialog'),
+        title: $('#previewTitle'), subtitle: $('#previewSubtitle'), icon: $('#previewIcon'),
+        seg: $('#previewSeg'), body: $('#previewBody'), download: $('#previewDownload'), close: $('#previewClose'),
+      };
+      if (!E.dialog) return null;
+      E.close.addEventListener('click', () => this.close());
+      E.backdrop.addEventListener('click', () => this.close());
+      E.seg.addEventListener('click', (e) => {
+        const b = e.target.closest('.segmented-btn');
+        if (b && this.state) this.render(b.dataset.view);
+      });
+      E.download.addEventListener('click', () => { if (this.state && this.state.download) this.state.download(); });
+      this.els = E;
+      return E;
+    },
+    open(state) {
+      const E = this.ensure();
+      if (!E) return;
+      this.state = state;
+      E.icon.textContent = state.icon || 'description';
+      E.title.textContent = state.title || '';
+      E.subtitle.textContent = state.subtitle || '';
+      const toggle = state.kind === 'md' || state.kind === 'html';
+      E.seg.hidden = !toggle;
+      E.download.hidden = !state.download;
+      this.render(toggle ? (state.initial || 'render') : 'code');
+      E.backdrop.classList.add('is-open');
+      E.dialog.classList.add('is-open');
+    },
+    render(view) {
+      const E = this.els, s = this.state;
+      if (!E || !s) return;
+      Array.from(E.seg.querySelectorAll('.segmented-btn')).forEach((b) => b.classList.toggle('is-active', b.dataset.view === view));
+      E.body.innerHTML = '';
+      if (view === 'render' && s.kind === 'md') {
+        E.body.innerHTML = '<div class="md-preview">' + renderSafeMarkdown(s.code || '') + '</div>';
+      } else if (view === 'render' && s.kind === 'html') {
+        const frame = document.createElement('iframe');
+        frame.className = 'html-preview';
+        frame.setAttribute('sandbox', '');
+        frame.setAttribute('referrerpolicy', 'no-referrer');
+        frame.srcdoc = s.code || '';
+        E.body.appendChild(frame);
+      } else if (s.kind === 'image') {
+        const img = document.createElement('img');
+        img.className = 'image-preview';
+        img.alt = s.title || '';
+        img.src = s.objectUrl || '';
+        E.body.appendChild(img);
+      } else if (s.kind === 'binary') {
+        const note = document.createElement('div');
+        note.className = 'preview-note';
+        note.innerHTML = '<span class="material-symbols-rounded">info</span><span>' + escapeHtml(window.t('preview.none')) + '</span>';
+        E.body.appendChild(note);
+      } else {
+        const pre = document.createElement('pre');
+        pre.className = 'preview-code';
+        const code = document.createElement('code');
+        code.textContent = s.code || '';
+        pre.appendChild(code);
+        E.body.appendChild(pre);
+      }
+    },
+    close() {
+      const E = this.els;
+      if (!E) return;
+      E.backdrop.classList.remove('is-open');
+      E.dialog.classList.remove('is-open');
+      if (this.state && this.state.objectUrl) { try { URL.revokeObjectURL(this.state.objectUrl); } catch {} }
+      this.state = null;
+      E.body.innerHTML = '';
+    },
+  };
+
+  function openFilePreview(card) {
+    if (!card) return;
+    const name = card.dataset.name || 'file';
+    const encoding = card.dataset.encoding;
+    const content = (card.querySelector('.file-card-content') || {}).value || '';
+    const kind = fileKind(name);
+    const download = () => downloadFileCard(card);
+    if (encoding === 'base64') {
+      const ext = (name.split('.').pop() || '').toLowerCase();
+      const blob = decodeBase64Blob(content, MIME_BY_EXT[ext]);
+      if (kind === 'image' && blob) {
+        Preview.open({ title: name, subtitle: formatBytes(blob.size), icon: 'image', kind: 'image', objectUrl: URL.createObjectURL(blob), download });
+      } else {
+        Preview.open({ title: name, subtitle: window.t('preview.binary'), icon: 'folder_zip', kind: 'binary', download });
+      }
+      return;
+    }
+    const k = (kind === 'md' || kind === 'html') ? kind : 'code';
+    Preview.open({
+      title: name, subtitle: window.t('preview.text'), icon: fileIconName(name),
+      kind: k, code: content, initial: (kind === 'md' || kind === 'html') ? 'render' : 'code', download,
+    });
+  }
+
   // ---------- Markdown ----------
   function renderMarkdown(text, opts) {
     opts = opts || {};
@@ -839,11 +1094,16 @@
     if (mc) mc.dataset.state = mascotState(m);
     fillContent(content, m);
 
-    if (!m.pending && !m.streaming && !node.querySelector('.msg-actions')) {
-      const fresh = buildMessageNode(m);
-      fresh.style.animation = 'none';
-      node.replaceWith(fresh);
-      enhanceCodeBlocks(fresh);
+    if (!m.pending && !m.streaming) {
+      const needsRebuild = !node.querySelector('.msg-actions')
+        || (m.truncated && !node.querySelector('.msg-continue'))
+        || (!m.truncated && node.querySelector('.msg-continue'));
+      if (needsRebuild) {
+        const fresh = buildMessageNode(m);
+        fresh.style.animation = 'none';
+        node.replaceWith(fresh);
+        enhanceCodeBlocks(fresh);
+      }
     }
   }
 
@@ -940,14 +1200,43 @@
       body.appendChild(stopped);
     }
 
+    // Файловая панель: несколько файлов — предлагаем скачать одним архивом.
+    const fileCards = content.querySelectorAll('.file-card');
+    if (fileCards.length >= 2) {
+      const bar = document.createElement('div');
+      bar.className = 'msg-files-bar';
+      const zipBtn = document.createElement('button');
+      zipBtn.type = 'button';
+      zipBtn.className = 'btn btn-tonal btn-sm';
+      zipBtn.innerHTML = `<span class="material-symbols-rounded">folder_zip</span><span>${window.t('chat.downloadZip')} (${fileCards.length})</span>`;
+      zipBtn.addEventListener('click', () => downloadMessageZip(wrap));
+      bar.appendChild(zipBtn);
+      body.appendChild(bar);
+    }
+
+    if (m.truncated) {
+      const cont = document.createElement('button');
+      cont.type = 'button';
+      cont.className = 'btn btn-outline btn-sm msg-continue';
+      cont.innerHTML = `<span class="material-symbols-rounded">play_arrow</span><span>${window.t('chat.continue')}</span>`;
+      cont.addEventListener('click', () => continueMessage(m));
+      body.appendChild(cont);
+    }
+
     if (!m.pending) {
       const actions = document.createElement('div');
       actions.className = 'msg-actions';
       const copyBtn = document.createElement('button');
       copyBtn.innerHTML = '<span class="material-symbols-rounded">content_copy</span>';
       copyBtn.title = window.t('chat.copy');
-      copyBtn.addEventListener('click', () => navigator.clipboard.writeText(cleanRecall(m.text || '')));
+      copyBtn.addEventListener('click', () => flashCopied(copyBtn, cleanRecall(m.text || '')));
       actions.appendChild(copyBtn);
+
+      const editBtn = document.createElement('button');
+      editBtn.innerHTML = '<span class="material-symbols-rounded">edit</span>';
+      editBtn.title = window.t('chat.edit');
+      editBtn.addEventListener('click', () => startEditMessage(wrap, m));
+      actions.appendChild(editBtn);
 
       if (m.role === 'assistant') {
         const speakBtn = document.createElement('button');
@@ -1086,6 +1375,7 @@
     renderAttachmentTray();
     el.composerInput.value = '';
     autoGrow();
+    hideMentionMenu();
 
     saveChats(AppState.chats);
     renderChatList(el.chatSearch.value);
@@ -1146,7 +1436,8 @@
     return '';
   }
 
-  async function requestAssistantReply(chat) {
+  async function requestAssistantReply(chat, opts) {
+    opts = opts || {};
     const pendingMsg = { id: uid(), role: 'assistant', text: '', pending: true, ts: Date.now(), model: chat.model };
     chat.messages.push(pendingMsg);
     renderMessages();
@@ -1161,11 +1452,13 @@
     let gotError = '';
     let deltaCount = 0;
     let failedHttp = false;
+    let gotTruncated = false;
 
     let cp = window.KulshAuth.guest ? '' : (AppState.settings.customPrompt || '');
     const ep = effortPrefix();
     if (ep) cp = ep + (cp ? '\n' + cp : '');
-    const skillsPrompt = window.KulshAuth.guest ? '' : await buildSkillsPrompt();
+    const lastUser = [...chat.messages].reverse().find((m) => m.role === 'user' && m.id !== pendingMsg.id);
+    const skillsPrompt = await skillsPromptForText(lastUser ? lastUser.text : '');
 
     try {
       let recallPass = false;
@@ -1186,6 +1479,7 @@
             skillsPrompt,
             recall: recallPass,
             hasOldMedia: payload.hasOldMedia,
+            isContinue: !!opts.isContinue,
           }),
         });
 
@@ -1209,6 +1503,7 @@
             let obj;
             try { obj = JSON.parse(jsonStr); } catch { continue; }
             if (obj.recall) recallAsked = true;
+            if (obj.truncated) gotTruncated = true;
             if (obj.error && !fullText) { gotError = obj.error; continue; }
             if (obj.delta) {
               deltaCount++;
@@ -1218,7 +1513,7 @@
                 msg.text = fullText;
                 msg.pending = false;
                 msg.streaming = true;
-                renderMessages();
+                scheduleStreamRender();
               }
             }
           }
@@ -1258,6 +1553,7 @@
         if (cur) {
           cur.text = cleanRecall(cur.text || fullText).trim();
           cur.stopped = !!AppState.stoppedByUser;
+          if (gotTruncated && !AppState.stoppedByUser) cur.truncated = true;
           delete cur.pending; delete cur.streaming;
           if (AppState.settings.voiceAutoplay && !AppState.stoppedByUser) speakText(cur.text);
         }
@@ -1282,6 +1578,87 @@
     chat.messages.splice(idx, 1);
     saveChats(AppState.chats);
     requestAssistantReply(chat);
+  }
+
+  // Инлайновое редактирование сообщения.
+  function startEditMessage(node, m) {
+    if (!node || AppState.isStreaming) return;
+    const content = node.querySelector('.msg-content');
+    if (!content || node.querySelector('.msg-edit')) return;
+    const isUser = m.role === 'user';
+
+    const box = document.createElement('div');
+    box.className = 'msg-edit';
+    const ta = document.createElement('textarea');
+    ta.className = 'msg-edit-input';
+    ta.value = m.text || '';
+    box.appendChild(ta);
+
+    const actions = document.createElement('div');
+    actions.className = 'msg-edit-actions';
+    const save = document.createElement('button');
+    save.type = 'button'; save.className = 'btn btn-filled btn-sm'; save.textContent = window.t('chat.save');
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.className = 'btn btn-sm'; cancel.textContent = window.t('chat.cancel');
+    actions.append(save, cancel);
+    box.appendChild(actions);
+
+    content.style.display = 'none';
+    content.after(box);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    autoGrowEl(ta);
+
+    const close = (saveIt) => {
+      box.remove();
+      content.style.display = '';
+      if (!saveIt) return;
+      const chat = getActiveChat();
+      const mm = chat && chat.messages.find((x) => x.id === m.id);
+      if (!mm) { renderMessages(); return; }
+      mm.text = ta.value;
+      if (isUser) {
+        // Обрезаем всё после правки и генерируем ответ заново.
+        const idx = chat.messages.indexOf(mm);
+        chat.messages = chat.messages.slice(0, idx + 1);
+        saveChats(AppState.chats);
+        renderMessages();
+        if (mm.text.trim() || (mm.attachments && mm.attachments.length)) requestAssistantReply(chat);
+        return;
+      }
+      saveChats(AppState.chats);
+      renderMessages();
+    };
+    save.addEventListener('click', () => close(true));
+    cancel.addEventListener('click', () => close(false));
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); close(true); }
+    });
+  }
+
+  function autoGrowEl(ta) {
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 360) + 'px';
+  }
+
+  function continueMessage(m) {
+    const chat = getActiveChat();
+    if (!chat || AppState.isStreaming) return;
+    delete m.truncated;
+    saveChats(AppState.chats);
+    renderMessages();
+    requestAssistantReply(chat, { isContinue: true });
+  }
+
+  // Троттлинг отрисовки во время стрима — иначе длинные ответы (и код в них)
+  // перерисовывают markdown на каждый чанк и интерфейс начинает лагать.
+  let streamRenderQueued = false;
+  function scheduleStreamRender() {
+    if (streamRenderQueued) return;
+    streamRenderQueued = true;
+    setTimeout(() => { streamRenderQueued = false; renderMessages(); }, 45);
   }
 
   // ============================================================
@@ -1444,36 +1821,53 @@
     return text;
   }
 
-  // Собираем включённые скиллы в один блок инструкций для сервера.
-  async function buildSkillsPrompt() {
-    const ids = AppState.settings.skills || [];
+  // Скиллы не «включаются» глобально — их вызывают в тексте сообщения через @id.
+  function parseMentions(text) {
+    const out = [];
+    const re = /(^|\s)@([^\s@/]{1,48})/g;
+    let m;
+    while ((m = re.exec(text || ''))) {
+      const id = m[2].replace(/[.,;:!?)\]}»"']+$/u, '');
+      if (id) out.push(id);
+    }
+    return [...new Set(out)];
+  }
+
+  // Собираем контент скиллов, вызванных через @, в один блок инструкций.
+  async function skillsPromptForText(text) {
+    if (window.KulshAuth.guest) return '';
+    const ids = parseMentions(text);
     if (!ids.length) return '';
-    if (!userSkills.length) await loadUserSkills();
+    await Promise.all([loadCatalog(), loadUserSkills()]);
     const parts = [];
-    for (const id of ids) { const c = await skillContent(id); if (c) parts.push(c.trim()); }
+    for (const raw of ids) {
+      const low = raw.toLowerCase();
+      const us = userSkills.find((s) => String(s.id).toLowerCase() === low);
+      if (us) { if (us.content) parts.push(us.content.trim()); continue; }
+      const meta = (skillsCatalog || []).find((s) => String(s.id).toLowerCase() === low);
+      if (meta) { const c = await skillContent(meta.id); if (c) parts.push(c.trim()); }
+    }
     return parts.join('\n\n---\n\n').slice(0, 6000);
   }
 
-  const isSkillOn = (id) => (AppState.settings.skills || []).includes(id);
-  function toggleSkill(id) {
-    const set = new Set(AppState.settings.skills || []);
-    if (set.has(id)) set.delete(id); else set.add(id);
-    AppState.settings.skills = [...set];
-    saveSettings(AppState.settings);
-    renderSkills();
+  // Единый список скиллов (личные + встроенные) для меню @.
+  function allSkills() {
+    const mine = userSkills.map((s) => ({ id: s.id, title: s.title, desc: s.desc || '', icon: 'extension' }));
+    const builtin = (skillsCatalog || []).map((s) => ({ id: s.id, title: pickLang(s.title), desc: pickLang(s.desc), icon: s.icon || 'bolt' }));
+    return [...mine, ...builtin];
   }
 
-  function skillRowHTML(id, icon, title, desc, removable) {
-    const on = isSkillOn(id);
-    return `<div class="skills-item ${on ? 'is-on' : ''}" data-id="${escapeAttr(id)}">
+  function skillRowHTML(id, icon, title, desc, mine) {
+    return `<div class="skills-item" data-open="${escapeAttr(id)}">
       <span class="skills-ico"><span class="material-symbols-rounded">${escapeHtml(icon)}</span></span>
       <span class="skills-txt">
         <span class="skills-name">${escapeHtml(title)}</span>
         ${desc ? `<span class="skills-desc">${escapeHtml(desc)}</span>` : ''}
+        <span class="skills-id">@${escapeHtml(id)}</span>
       </span>
-      ${removable
+      ${mine
         ? `<button class="skills-del" type="button" data-del="${escapeAttr(id)}" aria-label="${escapeAttr(window.t('skills.delete'))}"><span class="material-symbols-rounded">delete</span></button>`
-        : `<button class="switch" type="button" role="switch" aria-checked="${on}" data-toggle="${escapeAttr(id)}"><span class="switch-knob"></span></button>`}
+        : ''}
     </div>`;
   }
 
@@ -1483,11 +1877,12 @@
     el.skillsBuiltin.innerHTML = cat.map((s) =>
       skillRowHTML(s.id, s.icon || 'bolt', pickLang(s.title), pickLang(s.desc), false)).join('');
     el.skillsMine.innerHTML = userSkills.length
-      ? userSkills.map((s) => skillRowHTML(s.id, 'extension', s.title, (s.content || '').replace(/\s+/g, ' ').slice(0, 100), true)).join('')
+      ? userSkills.map((s) => skillRowHTML(s.id, 'extension', s.title, s.desc || (s.content || '').replace(/\s+/g, ' ').slice(0, 100), true)).join('')
       : `<p class="skills-empty">${escapeHtml(window.t('skills.empty'))}</p>`;
     const guest = window.KulshAuth.guest;
     if (el.skillsGuestHint) el.skillsGuestHint.hidden = !guest;
     if (el.skillsAddBtn) el.skillsAddBtn.hidden = guest;
+    if (el.skillsUploadBtn) el.skillsUploadBtn.hidden = guest;
   }
 
   async function openSkills() {
@@ -1511,27 +1906,80 @@
     el.skillsError.hidden = false;
   }
 
+  // Показываем содержимое скилла с красивой отрисовкой markdown.
+  async function openSkillPreview(id) {
+    await Promise.all([loadCatalog(), loadUserSkills()]);
+    const meta = (skillsCatalog || []).find((s) => s.id === id);
+    const mine = userSkills.find((s) => s.id === id);
+    const title = meta ? pickLang(meta.title) : (mine ? mine.title : id);
+    const content = mine ? mine.content : (meta ? await skillContent(meta.id) : '');
+    Preview.open({ title, subtitle: '@' + id, icon: (meta && meta.icon) || 'extension', code: content, kind: 'md', initial: 'render' });
+  }
+
+  function slugId(s) {
+    return String(s || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}_.-]+/gu, '').slice(0, 32);
+  }
+
+  // Разбираем SKILL.md: frontmatter (name/description) + тело.
+  function parseSkillMarkdown(text, filename) {
+    let body = String(text || '');
+    let name = '', desc = '';
+    const fm = body.match(/^---\s*\n([\s\S]*?)\n---\s*\n?/);
+    if (fm) {
+      fm[1].split('\n').forEach((line) => {
+        const m = line.match(/^([A-Za-z_]+)\s*:\s*(.*)$/);
+        if (!m) return;
+        const k = m[1].toLowerCase();
+        const v = m[2].trim().replace(/^["']|["']$/g, '');
+        if (k === 'name') name = v;
+        else if (k === 'description' || k === 'desc') desc = v;
+      });
+      body = body.slice(fm[0].length);
+    }
+    const base = String(filename || '').replace(/\.[^.]+$/, '');
+    const title = name || base || 'Skill';
+    return { title, id: slugId(name || base), desc, content: body.trim() };
+  }
+
+  async function handleSkillFile(file) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = parseSkillMarkdown(text, file.name);
+      el.skillTitle.value = parsed.title;
+      if (el.skillId) el.skillId.value = parsed.id;
+      el.skillContent.value = parsed.content;
+      el.skillsForm.hidden = false;
+      el.skillsError.hidden = true;
+      el.skillTitle.focus();
+    } catch {
+      showSkillError(window.t('skills.uploadError'));
+    }
+  }
+
   async function saveSkill() {
     const title = (el.skillTitle.value || '').trim();
+    const idRaw = (el.skillId ? el.skillId.value : '').trim();
     const content = (el.skillContent.value || '').trim();
-    if (!title || !content) return;
+    if (!title || !content) return showSkillError(window.t('skills.needFields'));
     if (userSkills.length >= 20) return showSkillError(window.t('skills.limit'));
+    const desc = content.replace(/^#+\s*/, '').replace(/\s+/g, ' ').slice(0, 160);
     el.skillSaveBtn.disabled = true;
     try {
       const r = await fetch('/api/skills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content }),
+        body: JSON.stringify({ id: idRaw, title, desc, content }),
       });
       const j = await r.json();
       if (!r.ok || !j.skill) throw new Error((j && j.error) || 'fail');
       userSkills = [j.skill, ...userSkills].slice(0, 20);
       skillCache.set(j.skill.id, content);
-      // Новый скилл сразу включаем — так ожидаемее.
-      AppState.settings.skills = [...new Set([...(AppState.settings.skills || []), j.skill.id])];
-      saveSettings(AppState.settings);
-      el.skillTitle.value = ''; el.skillContent.value = '';
-      el.skillsForm.hidden = true; el.skillsError.hidden = true;
+      el.skillTitle.value = '';
+      if (el.skillId) el.skillId.value = '';
+      el.skillContent.value = '';
+      el.skillsForm.hidden = true;
+      el.skillsError.hidden = true;
       renderSkills();
     } catch {
       showSkillError(window.t('skills.error'));
@@ -1544,9 +1992,68 @@
     try { await fetch('/api/skills?id=' + encodeURIComponent(id), { method: 'DELETE' }); } catch {}
     userSkills = userSkills.filter((s) => s.id !== id);
     skillCache.delete(id);
-    AppState.settings.skills = (AppState.settings.skills || []).filter((x) => x !== id);
-    saveSettings(AppState.settings);
     renderSkills();
+  }
+
+  // ---------- Меню @-упоминаний в поле ввода ----------
+  let mentionItems = [];
+  let mentionActive = 0;
+
+  function mentionQuery() {
+    const ta = el.composerInput;
+    if (!ta) return null;
+    const before = ta.value.slice(0, ta.selectionStart);
+    const m = before.match(/(^|\s)@([^\s@/]{0,48})$/);
+    return m ? { query: m[2], start: before.length - m[2].length - 1 } : null;
+  }
+
+  async function updateMentionMenu() {
+    if (!el.mentionMenu) return;
+    if (window.KulshAuth.guest) return hideMentionMenu();
+    const q = mentionQuery();
+    if (!q) return hideMentionMenu();
+    await Promise.all([loadCatalog(), loadUserSkills()]);
+    const needle = q.query.toLowerCase();
+    const list = allSkills().filter((s) =>
+      !needle || s.id.toLowerCase().includes(needle) || (s.title || '').toLowerCase().includes(needle)
+    ).slice(0, 8);
+    if (!list.length) return hideMentionMenu();
+    mentionItems = list;
+    mentionActive = 0;
+    el.mentionMenu.innerHTML = list.map((s, i) =>
+      `<button type="button" class="mention-item${i === 0 ? ' is-active' : ''}" data-i="${i}">
+        <span class="material-symbols-rounded">${escapeHtml(s.icon)}</span>
+        <span class="mention-txt"><span class="mention-name">${escapeHtml(s.title)}</span><span class="mention-id">@${escapeHtml(s.id)}</span></span>
+      </button>`).join('');
+    el.mentionMenu.classList.add('is-open');
+  }
+
+  function hideMentionMenu() {
+    if (el.mentionMenu) el.mentionMenu.classList.remove('is-open');
+    mentionItems = [];
+    mentionActive = 0;
+  }
+  const mentionOpen = () => !!(el.mentionMenu && el.mentionMenu.classList.contains('is-open'));
+
+  function applyMention(i) {
+    const s = mentionItems[i];
+    const q = mentionQuery();
+    if (!s || !q) return;
+    const ta = el.composerInput;
+    const after = ta.value.slice(ta.selectionStart);
+    const head = ta.value.slice(0, q.start);
+    ta.value = head + '@' + s.id + ' ' + after;
+    const pos = head.length + s.id.length + 2;
+    ta.setSelectionRange(pos, pos);
+    hideMentionMenu();
+    autoGrow();
+    ta.focus();
+  }
+
+  function highlightMention(i) {
+    if (!el.mentionMenu) return;
+    mentionActive = (i + mentionItems.length) % mentionItems.length;
+    Array.from(el.mentionMenu.children).forEach((c, idx) => c.classList.toggle('is-active', idx === mentionActive));
   }
 
   // ============================================================
@@ -1604,12 +2111,23 @@
       }
     });
 
-    el.composerInput.addEventListener('input', autoGrow);
+    el.composerInput.addEventListener('input', () => { autoGrow(); updateMentionMenu(); });
+    el.composerInput.addEventListener('blur', () => setTimeout(hideMentionMenu, 150));
     el.composerInput.addEventListener('keydown', (e) => {
+      if (mentionOpen()) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); highlightMention(mentionActive + 1); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); highlightMention(mentionActive - 1); return; }
+        if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); applyMention(mentionActive); return; }
+        if (e.key === 'Escape') { e.preventDefault(); hideMentionMenu(); return; }
+      }
       if (e.key === 'Enter' && !e.shiftKey && AppState.settings.sendOnEnter) {
         e.preventDefault();
         if (!AppState.isStreaming) sendMessage();
       }
+    });
+    if (el.mentionMenu) el.mentionMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.mention-item');
+      if (item) applyMention(Number(item.dataset.i));
     });
 
     el.sendBtn.addEventListener('click', () => {
@@ -1627,6 +2145,8 @@
       if (item) { toggleTodo(item); return; }
       const dl = e.target.closest('.file-card-dl');
       if (dl) { downloadFileCard(dl.closest('.file-card')); return; }
+      const card = e.target.closest('.file-card');
+      if (card) { openFilePreview(card); return; }
       const retry = e.target.closest('.error-retry');
       if (retry) {
         const node = retry.closest('.msg');
@@ -1649,27 +2169,34 @@
     // Skills dialog
     if (el.skillsCloseBtn) el.skillsCloseBtn.addEventListener('click', closeSkills);
     if (el.skillsBackdrop) el.skillsBackdrop.addEventListener('click', closeSkills);
-    if (el.skillsBuiltin) el.skillsBuiltin.addEventListener('click', (e) => {
-      const t = e.target.closest('[data-toggle]');
-      if (t) toggleSkill(t.dataset.toggle);
-    });
-    if (el.skillsMine) el.skillsMine.addEventListener('click', (e) => {
-      const t = e.target.closest('[data-toggle]');
-      if (t) { toggleSkill(t.dataset.toggle); return; }
+    const onSkillListClick = (e) => {
       const d = e.target.closest('[data-del]');
-      if (d) deleteSkill(d.dataset.del);
-    });
+      if (d) { e.stopPropagation(); deleteSkill(d.dataset.del); return; }
+      const open = e.target.closest('[data-open]');
+      if (open) openSkillPreview(open.dataset.open);
+    };
+    if (el.skillsBuiltin) el.skillsBuiltin.addEventListener('click', onSkillListClick);
+    if (el.skillsMine) el.skillsMine.addEventListener('click', onSkillListClick);
     if (el.skillsAddBtn) el.skillsAddBtn.addEventListener('click', () => {
       el.skillsForm.hidden = false;
       el.skillsError.hidden = true;
       el.skillTitle.focus();
     });
+    if (el.skillsUploadBtn && el.skillsFile) {
+      el.skillsUploadBtn.addEventListener('click', () => el.skillsFile.click());
+      el.skillsFile.addEventListener('change', (e) => {
+        handleSkillFile(e.target.files && e.target.files[0]);
+        el.skillsFile.value = '';
+      });
+    }
     if (el.skillCancelBtn) el.skillCancelBtn.addEventListener('click', () => {
       el.skillsForm.hidden = true; el.skillsError.hidden = true;
     });
     if (el.skillSaveBtn) el.skillSaveBtn.addEventListener('click', saveSkill);
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && el.skillsDialog && el.skillsDialog.classList.contains('is-open')) closeSkills();
+      if (e.key !== 'Escape') return;
+      if (el.skillsDialog && el.skillsDialog.classList.contains('is-open')) closeSkills();
+      else if (el.previewDialog && el.previewDialog.classList.contains('is-open')) Preview.close();
     });
 
     el.settingsTabs.addEventListener('click', (e) => {

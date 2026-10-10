@@ -139,10 +139,17 @@
 
   let usage = null;
   const fmtPts = (n) => (Math.round(Number(n) * 10) / 10).toString();
+  // Компактный формат токенов: 15000 → «15 тыс.» / «15K».
+  function fmtTok(n) {
+    const v = Math.max(0, Number(n) || 0);
+    try {
+      return new Intl.NumberFormat(lang() === 'en' ? 'en' : 'ru', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+    } catch { return String(Math.round(v)); }
+  }
 
   function usageHTML() {
     const s = tr();
-    const u = usage || { used: 0, limit: 300, guest: !A.user };
+    const u = usage || { used: 0, limit: A.user ? 100000 : 15000, guest: !A.user };
     const pct = Math.max(0, Math.min(100, u.limit ? (u.used / u.limit) * 100 : 0));
     const left = Math.max(0, u.limit - u.used);
     const tone = pct >= 85 ? 'is-danger' : pct >= 60 ? 'is-warn' : '';
@@ -157,17 +164,17 @@
       <div class="acct-usage">
         <div class="acct-usage-top">
           <span>${A.user ? s.usageTitle : s.usageGuest}</span>
-          <span class="acct-usage-num">${fmtPts(u.used)} / ${fmtPts(u.limit)}</span>
+          <span class="acct-usage-num">${fmtTok(u.used)} / ${fmtTok(u.limit)}</span>
         </div>
         <div class="acct-bar ${tone}"><span style="width:${pct.toFixed(1)}%"></span></div>
         <div class="acct-usage-sub">
-          <span>${esc(left === 0 ? (lang() === 'en' ? 'Limit reached' : 'Лимит исчерпан') : (lang() === 'en' ? left + ' left' : 'осталось ' + fmtPts(left)))}</span>
+          <span>${esc(left === 0 ? (lang() === 'en' ? 'Limit reached' : 'Лимит исчерпан') : (lang() === 'en' ? fmtTok(left) + ' tokens left' : 'осталось ' + fmtTok(left) + ' токенов'))}</span>
           ${reset ? `<span>${esc(reset)}</span>` : ''}
         </div>
       </div>
       <div class="acct-balance">
         <span class="material-symbols-rounded">account_balance_wallet</span>
-        <span>${s.balance}: ${fmtPts(u.balance || 0)} ₽</span>
+        <span>${s.balance}: ${fmtPts((u.balance || 0) / 100)} ₽</span>
         <span class="acct-soon">${s.balanceSoon}</span>
       </div>`;
   }
@@ -327,7 +334,17 @@
 
   function signIn(p, btn) {
     if (!hasConsent()) return askConsent(() => signIn(p, btn));
-    if (p !== 'telegram') { location.href = `/api/auth/start/${p}`; return; }
+    if (p !== 'telegram') {
+      // Возвращаем человека на ту же страницу, откуда он начал вход.
+      let next = location.pathname + location.search + location.hash;
+      try {
+        const u = new URL(location.href);
+        u.searchParams.delete('auth_error');
+        next = u.pathname + (u.search || '') + u.hash;
+      } catch {}
+      location.href = `/api/auth/start/${p}?next=${encodeURIComponent(next)}`;
+      return;
+    }
     // Окно Telegram нужно открыть синхронно по клику, иначе браузер его заблокирует.
     if (!(window.Telegram && window.Telegram.Login)) {
       loadTelegram().then(() => open(tr().errors.failed), () => open(tr().errors.failed));

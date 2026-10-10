@@ -126,33 +126,34 @@ Authorization: Bearer <span class="c-str">kulsh_sk_...</span></pre></div>
         <h3 data-i18n="docs.chat.res">Ответ (поток)</h3>
         <div class="code"><pre><span class="c-key">data:</span> {<span class="c-key">"delta"</span>:<span class="c-str">"Привет!"</span>}
 <span class="c-key">data:</span> {<span class="c-key">"delta"</span>:<span class="c-str">" Чем помочь?"</span>}
-<span class="c-key">data:</span> {<span class="c-key">"done"</span>:true,<span class="c-key">"usage"</span>:{<span class="c-key">"points"</span>:1}}</pre></div>
+<span class="c-key">data:</span> {<span class="c-key">"done"</span>:true,<span class="c-key">"usage"</span>:{<span class="c-key">"used"</span>:<span class="c-str">12430</span>,<span class="c-key">"limit"</span>:<span class="c-str">100000</span>,<span class="c-key">"unit"</span>:<span class="c-str">"tokens"</span>}}</pre></div>
 
         <h2 id="models" data-i18n="docs.nav.models">Модели</h2>
         <div class="endpoint"><span class="method method-get">GET</span><span>/api/v1/models</span></div>
-        <p data-i18n="docs.models.p">Возвращает доступные модели и их стоимость в очках лимита.</p>
+        <p data-i18n="docs.models.p">Возвращает доступные модели и их множитель расхода дневного лимита.</p>
         <div class="code"><pre>{
   <span class="c-key">"models"</span>: [
-    { <span class="c-key">"id"</span>: <span class="c-str">"gemini-3.5-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"google"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1.5</span> },
-    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4.1-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1</span> },
-    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4-pro"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">false</span>, <span class="c-key">"points"</span>: <span class="c-str">2</span> },
-    { <span class="c-key">"id"</span>: <span class="c-str">"glm-5.3-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">1</span> },
-    { <span class="c-key">"id"</span>: <span class="c-str">"kimi-k3"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"points"</span>: <span class="c-str">3</span> }
+    { <span class="c-key">"id"</span>: <span class="c-str">"gemini-3.5-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"google"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"mult"</span>: <span class="c-str">1.5</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4.1-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"mult"</span>: <span class="c-str">1</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"deepseek-v4-pro"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">false</span>, <span class="c-key">"mult"</span>: <span class="c-str">2</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"glm-5.3-flash"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"mult"</span>: <span class="c-str">1</span> },
+    { <span class="c-key">"id"</span>: <span class="c-str">"kimi-k3"</span>, <span class="c-key">"provider"</span>: <span class="c-str">"neutralbeats"</span>, <span class="c-key">"vision"</span>: <span class="c-str">true</span>, <span class="c-key">"mult"</span>: <span class="c-str">3</span> }
   ]
 }</pre></div>
 
         <h2 id="usage" data-i18n="docs.nav.usage">Лимиты и usage</h2>
-        <p data-i18n="docs.usage.p">У каждого аккаунта одна шкала бесплатного лимита в очках. Каждая модель тратит её по-разному: лёгкие — почти ничего, флагманы — заметно больше.</p>
+        <p data-i18n="docs.usage.p">У каждого аккаунта один дневной лимит, измеряемый в токенах. Каждая модель тратит его по-разному: лёгкие — почти ничего, флагманы — заметно больше.</p>
         <div class="endpoint"><span class="method method-get">GET</span><span>/api/v1/usage</span></div>
         <div class="code"><pre>{
-  <span class="c-key">"used"</span>: <span class="c-str">42</span>,
-  <span class="c-key">"limit"</span>: <span class="c-str">300</span>,
+  <span class="c-key">"used"</span>: <span class="c-str">12430</span>,
+  <span class="c-key">"limit"</span>: <span class="c-str">100000</span>,
+  <span class="c-key">"unit"</span>: <span class="c-str">"tokens"</span>,
   <span class="c-key">"resetsAt"</span>: <span class="c-str">"2026-10-11T00:00:00Z"</span>,
   <span class="c-key">"balance"</span>: <span class="c-str">0</span>
 }</pre></div>
         <div class="callout" style="margin-top:var(--sp-3);">
           <span class="material-symbols-rounded">info</span>
-          <p data-i18n="docs.usage.note">Если ответ не пришёл по технической причине на стороне сервиса — очки не списываются.</p>
+          <p data-i18n="docs.usage.note">Если ответ не пришёл по технической причине на стороне сервиса — токены не списываются.</p>
         </div>
 
         <h2 id="errors" data-i18n="docs.nav.errors">Ошибки</h2>
@@ -161,7 +162,7 @@ Authorization: Bearer <span class="c-str">kulsh_sk_...</span></pre></div>
           <li data-i18n-html="docs.errors.l1"><code>401</code> — ключ отсутствует или недействителен</li>
           <li data-i18n-html="docs.errors.l2"><code>402</code> — исчерпан бесплатный лимит и нулевой баланс</li>
           <li data-i18n-html="docs.errors.l3"><code>429</code> — слишком много запросов, попробуй позже</li>
-          <li data-i18n-html="docs.errors.l4"><code>502</code> — модель временно недоступна (очки не списываются)</li>
+          <li data-i18n-html="docs.errors.l4"><code>502</code> — модель временно недоступна (токены не списываются)</li>
         </ul>
       </div>
     </div>

@@ -20,6 +20,20 @@ function origin(req, env) {
   return `${proto}://${host}`;
 }
 
+// Куда вернуть пользователя после входа. Принимаем только локальные пути.
+function safeNext(raw) {
+  const s = String(raw || '');
+  if (!s.startsWith('/') || s.startsWith('//') || s.startsWith('/\\')) return '';
+  if (!/^\/[\x20-\x7E]*$/.test(s)) return '';
+  return s.slice(0, 300);
+}
+// Добавляет параметр к пути, сохраняя query и hash.
+function withParam(path, key, value) {
+  const [base, hash] = String(path).split('#');
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}${key}=${encodeURIComponent(value)}${hash ? '#' + hash : ''}`;
+}
+
 const PROVIDERS = {
   google: {
     env: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
@@ -115,27 +129,31 @@ export default async function handler(req) {
   }
 
   const P = PROVIDERS[provider];
-  if (!P || !isOn(provider, env)) return redirect('/?auth_error=provider_off');
+  const nextFromQuery = safeNext(url.searchParams.get('next'));
+  if (!P || !isOn(provider, env)) return redirect(withParam(nextFromQuery || '/', 'auth_error', 'provider_off'));
   const [clientId, clientSecret] = creds(provider, env);
   const redirectUri = `${origin(req, env)}/api/auth/callback/${provider}`;
 
   if (action === 'start') {
     const state = b64rand();
     const q = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, response_type: 'code', state, ...P.extra });
-    return redirect(`${P.authUrl}?${q}`, [setCookie(STATE_COOKIE, state, { maxAge: 600, req })]);
+    // next храним вместе со state, чтобы вернуть человека на исходную страницу.
+    return redirect(`${P.authUrl}?${q}`, [setCookie(STATE_COOKIE, `${state}|${nextFromQuery}`, { maxAge: 600, req })]);
   }
 
   if (action === 'callback') {
     const clear = setCookie(STATE_COOKIE, '', { maxAge: 0, req });
+    const [cookieState, cookieNext] = (getCookie(req, STATE_COOKIE) || '').split('|');
+    const next = safeNext(cookieNext);
     const code = url.searchParams.get('code');
-    if (!code || !url.searchParams.get('state') || url.searchParams.get('state') !== getCookie(req, STATE_COOKIE)) {
-      return redirect('/?auth_error=state', [clear]);
+    if (!code || !url.searchParams.get('state') || url.searchParams.get('state') !== cookieState) {
+      return redirect(withParam(next || '/', 'auth_error', 'state'), [clear]);
     }
     try {
       const user = await P.profile(code, redirectUri, clientId, clientSecret);
-      return redirect('/', [clear, setCookie(SESSION_COOKIE, await signSession(user, env.AUTH_SECRET), { req })]);
+      return redirect(next || '/', [clear, setCookie(SESSION_COOKIE, await signSession(user, env.AUTH_SECRET), { req })]);
     } catch (e) {
-      return redirect(`/?auth_error=${encodeURIComponent(e.message || 'failed')}`, [clear]);
+      return redirect(withParam(next || '/', 'auth_error', e.message || 'failed'), [clear]);
     }
   }
 

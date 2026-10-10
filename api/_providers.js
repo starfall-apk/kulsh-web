@@ -54,7 +54,7 @@ const google = {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemText }] },
         contents,
-        generationConfig: { temperature, maxOutputTokens: 8192 },
+        generationConfig: { temperature, maxOutputTokens: 16384 },
         safetySettings: SAFETY,
       }),
     });
@@ -68,7 +68,9 @@ const google = {
     if (cand && cand.finishReason && cand.finishReason !== 'STOP' && cand.finishReason !== 'MAX_TOKENS' && !text) {
       blocked = blocked || cand.finishReason;
     }
-    return { text, finish: cand && cand.finishReason, blocked };
+    const um = data && data.usageMetadata;
+    const usage = um ? (Number(um.promptTokenCount) || 0) + (Number(um.candidatesTokenCount) || 0) : undefined;
+    return { text, finish: cand && cand.finishReason, blocked, usage };
   },
   // Разбор НЕ-стримингового ответа (если сервис проигнорировал stream:true).
   parseFull(data) {
@@ -117,7 +119,7 @@ const openaiCompat = {
         messages: msgs,
         temperature,
         stream: true,
-        max_tokens: 8192,
+        max_tokens: 16384,
       }),
     });
   },
@@ -133,7 +135,9 @@ const openaiCompat = {
       if (typeof d.reasoning_content === 'string') reasoning = d.reasoning_content;
       else if (typeof d.reasoning === 'string') reasoning = d.reasoning;
     }
-    return { text, reasoning, finish: ch && ch.finish_reason, blocked: null };
+    const u = data && data.usage;
+    const usage = u ? (Number(u.prompt_tokens) || 0) + (Number(u.completion_tokens) || 0) : undefined;
+    return { text, reasoning, finish: ch && ch.finish_reason, blocked: null, usage };
   },
   // Разбор НЕ-стримингового ответа (если сервис проигнорировал stream:true).
   parseFull(data) {

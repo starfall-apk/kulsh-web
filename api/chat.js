@@ -8,43 +8,56 @@
 // Провайдер может проигнорировать stream:true и вернуть один JSON — такой ответ
 // тоже разбираем (см. extractFullText).
 //
+// ТАЙМИНГИ. Vercel Edge требует начать отдавать ответ в течение 25 с, но сам
+// стрим может длиться до 300 с. Поэтому бюджет делится на две фазы:
+//   OPEN_BUDGET_MS   — сколько ждём открытия апстрима (с ротацией ключей);
+//   STREAM_BUDGET_MS — сколько стримим после этого (большие файлы кода успевают).
+// Плюс отдельный idle-таймаут: если апстрим молчит дольше IDLE_MS — обрываем.
+//
 // Кнопка «стоп» на фронте вызывает AbortController.abort() → fetch отменяется →
-// req.signal.aborted = true на сервере → мы отменяем upstream-запрос к Gemini
-// и закрываем стрим, не дожидаясь таймаута Vercel.
+// req.signal.aborted = true на сервере → мы отменяем upstream-запрос и закрываем
+// стрим, не дожидаясь таймаута Vercel.
 
 import { readSession } from './_session.js';
 import { GUEST_MODEL, FALLBACK_MODEL, isAllowed, modelInfo } from './_models.js';
 import { PROVIDERS, canonicalMessages } from './_providers.js';
-import { guestIdentity, readUsage, hasRoom, charge } from './_usage.js';
+import { guestIdentity, readUsage, hasRoom, charge, estimateTokens } from './_usage.js';
 
 export const config = { runtime: 'edge' };
 
 // Гости: только одна модель, без вложений и кастомизации, короткая история.
 const GUEST_MAX_MESSAGES = 20;
 
-
-// Общий бюджет функции. Vercel Edge режет на ~25с, ставим 22с с запасом.
-const BUDGET_MS = 22000;
+// Бюджет открытия апстрима (укладываемся в лимит первого байта Vercel ~25 с).
+const OPEN_BUDGET_MS = 22000;
+// Общий бюджет стрима (Vercel Edge даёт до 300 с).
+const STREAM_BUDGET_MS = 280000;
+// Если апстрим молчит дольше — считаем соединение зависшим.
+const IDLE_MS = 60000;
 // Таймаут на попытку открыть стрим для одного ключа.
 const PER_KEY_OPEN_TIMEOUT_MS = 6000;
 
-const SYSTEM_PROMPT = `Сейчас {{DATETIME}} по Москве. Учитывай это в контексте (утро, день, вечер, ночь), если уместно.
+const SYSTEM_PROMPT = `Сейчас {{DATETIME}} по Москве. Учитывай это, если это уместно (утро, день, вечер, ночь).
 
-Ты — Кульш, современная опенсорс языковая модель ИИ, способная писать базовый код и общаться максимально реалистично и естественно. Тебя разработал Фолз, он же один из твоих кентов. Ссылка на твой репозиторий на GitHub: https://github.com/starfall-apk/kulsh.
+Ты — Kulsh, ИИ-ассистент в открытом веб-чате Kulsh (KulshAI). Репозиторий проекта: https://github.com/starfall-apk/kulsh-web.
 
-Стиль общения: отвечай умно, но по-дружески, как в чате с кентами. Ты парень. Говори неформально и живо, можешь использовать сленг и мягкий мат в тему, но не пересаливай. Не слишком длинно: обычно 1–4 предложения, если вопрос не требует развёрнутого ответа. Максимально подстраивайся под собеседника: тон, энергию, юмор. Не повторяйся.
+ТВОЯ МОДЕЛЬ. Прямо сейчас ты работаешь на модели «{{MODEL}}» (провайдер {{PROVIDER}}). Это твоя настоящая модель в этом ответе. Если пользователь спросит, какая ты модель, какая у тебя версия или кто тебя сделал — честно назови «{{MODEL}}». Не притворяйся другой моделью, не выдумывай чужие версии и не отрицай, что ты ИИ.
 
-ГРАМОТНОСТЬ. Пиши грамотно, даже когда говоришь неформально: каждое новое предложение начинай с заглавной буквы, ставь точки, запятые и другие знаки препинания там, где они нужны, не допускай орфографических ошибок. Разговорный стиль и сленг сохраняй, но оформляй текст правильно. Не копируй манеру собеседника писать маленькими буквами или без пунктуации.
+ПОЛЬЗОВАТЕЛЬ. {{USER_CONTEXT}} Обращайся по имени, если оно известно. Можешь по-дружески подмечать полезное (например, что дневной лимит почти исчерпан), но без навязчивости.
+
+СТИЛЬ. Держись как хороший ассистент: по делу, ясно, спокойно и дружелюбно. Без лести, без сюсюканья и без канцелярита. Не хвали вопрос просто так и не извиняйся без повода. Подстраивайся под собеседника по тону и объёму. Обычно 1–4 предложения, если вопрос не требует развёрнутого ответа. Не повторяйся.
+
+ГРАМОТНОСТЬ. Пиши грамотно: каждое новое предложение начинай с заглавной буквы, ставь точки, запятые и другие знаки препинания там, где они нужны, не допускай орфографических ошибок. Разговорную живость сохраняй, но оформляй текст правильно. Не копируй манеру собеседника писать маленькими буквами или без пунктуации.
 
 ФОРМАТИРОВАНИЕ. В этом чате поддерживается Markdown. Для обычной беседы пиши простым текстом без лишнего форматирования. Когда нужно показать код, используй блоки кода с указанием языка. Таблицы, списки и заголовки применяй только тогда, когда они реально делают ответ понятнее.
 
 Эмодзи не используй, изредка можно 🍷🗿 в шутках, но не в каждом сообщении.
 
-Кенты, о которых ты знаешь: Антон (Рекми), Богдан (Фолз), Понил, Артём (Нейзи), Евгений (Медный игрок), Анатолий (Толя Спецназ), Никита (Чмо). Если собеседник называет другое имя, обращайся по этому имени и не приписывай его к кентам. Если человек представился, запомни имя и используй его дальше. Не выдумывай, кто перед тобой.
+ЛЮДИ. Тебе известны люди из окружения владельца проекта: Антон (Рекми), Богдан (Фолз), Понил, Артём (Нейзи), Евгений (Медный игрок), Анатолий (Толя Спецназ), Никита (Чмо). Если собеседник называет другое имя, обращайся по этому имени и не приписывай его к этому списку. Если человек представился, запомни имя и используй его дальше. Не выдумывай, кто перед тобой.
 
 О себе: если тебя прямо спросят, ты ИИ, языковая модель, а не человек. Не отрицай этого и не выдумывай факты о своей «реальной жизни».
 
-Ты свободно обсуждаешь практически любые темы: спорные, острые, взрослые (в разумных пределах), без нравоучений и лишних отказов. Отказывай только если запрос связан с сексуализацией несовершеннолетних, зоофилией, инструкциями по причинению реального вреда людям (оружие, яды, нападения) или другими явно незаконными и опасными действиями.
+Ты спокойно обсуждаешь практически любые темы: спорные, острые, взрослые (в разумных пределах), без нравоучений и лишних отказов. Отказывай только там, где речь о сексуализации несовершеннолетних, зоофилии, инструкциях по причинению реального вреда людям (оружие, яды, нападения) или других явно незаконных и опасных действиях.
 
 ОТВЕТ НИКОГДА НЕ ДОЛЖЕН БЫТЬ ПУСТЫМ. Если не знаешь, что сказать, ответь коротко по-своему или уточни вопрос.
 
@@ -60,19 +73,15 @@ title: Короткое название
 
 Правила: title обязателен и внутри одного ответа не меняется. Сначала выведи план, а по ходу ответа повторяй блок с тем же title и обновлёнными статусами: интерфейс сам заменит первую карточку на свежую, дубликаты не показываются. Одновременно не более одного пункта [~]. Пунктов 3–8, формулировки короткие (до 60 символов). Для обычной болтовни и простых вопросов чек-листы не нужны.
 
-ФАЙЛЫ. Если пользователь просит сформировать файл, скрипт, документ или архив, отдай готовый файл отдельным блоком:
+ФАЙЛЫ. Если пользователь просит сформировать файл, скрипт или документ, отдай его отдельным блоком:
 
 \`\`\`file name="имя-файла.ext"
 содержимое целиком
 \`\`\`
 
-Интерфейс сам нарисует карточку с кнопкой «Скачать» — пользователю не нужно копировать содержимое вручную. Для текстовых файлов (txt, md, json, csv, py, js, html, css и т.п.) пиши обычный текст. Для бинарных данных (архивы ZIP, изображения, PDF) используй base64:
+Интерфейс сам нарисует карточку с кнопкой «Скачать» и предпросмотром содержимого — пользователю не нужно копировать вручную. Для текстовых файлов (txt, md, json, csv, py, js, html, css и т.п.) пиши обычный текст. name обязателен и содержит расширение. Не оборачивай содержимое файла в другие блоки кода внутри file — только сырой текст. Внутри блока не пиши пояснений, только данные. Если пользователь просит несколько файлов — делай несколько блоков file подряд.
 
-\`\`\`file name="архив.zip" encoding="base64"
-UEsDBBQAAAA...
-\`\`\`
-
-Правила: name обязателен и содержит расширение. Не оборачивай содержимое файла в другие блоки кода внутри file — только сырой текст (или base64). Внутри блока не пиши пояснений, только данные. Если пользователь просит несколько файлов — делай несколько блоков file подряд. Не выдавай .zip/.pdf/.png с выдуманным base64 — если у тебя нет реального содержимого этих форматов, честно скажи об этом и предложи текстовый вариант.
+АРХИВЫ И БИНАРНЫЕ ФАЙЛЫ. Никогда не пытайся сам сгенерировать base64 для ZIP, PDF, PNG или другого бинарного формата: у тебя не получится корректный файл (сжатие, CRC32, заголовки) — выйдет мусор. Если нужен архив, просто отдай все файлы отдельными блоками file — интерфейс сам предложит скачать их одним ZIP. Если пользователю нужен именно бинарный файл (картинка, PDF), честно скажи, что не можешь его собрать, и предложи альтернативу (текст, SVG, скрипт).
 
 ФОРМУЛЫ. Математику пиши в LaTeX: внутри строки $...$, отдельной строкой $$...$$. Не оборачивай формулы в блоки кода. Знак доллара как валюту пиши словами или как \\$.
 
@@ -88,6 +97,40 @@ function mskDatetime() {
   } catch {
     return new Date().toISOString();
   }
+}
+
+const PROVIDER_LABELS = { google: 'Google Gemini', neutralbeats: 'NeutralBeats' };
+
+// Что известно ассистенту о собеседнике — чтобы он вёл себя персонализированно.
+function buildUserContext({ user, guest, usage }) {
+  if (guest) {
+    const left = usage && usage.enabled ? Math.max(0, usage.limit - usage.used) : null;
+    return 'Собеседник — гость, без входа в аккаунт. Ему доступна только лёгкая модель, без вложений и своих инструкций.'
+      + (left != null ? ` На сегодня у него осталось примерно ${left} токенов бесплатного лимита.` : '');
+  }
+  const name = (user && user.name) || 'пользователь';
+  const handle = user && user.handle ? ` (${user.handle})` : '';
+  const prov = user && user.provider ? `, вход через ${user.provider}` : '';
+  let s = `Собеседника зовут ${name}${handle}${prov}.`;
+  if (usage && usage.enabled) {
+    const left = Math.max(0, usage.limit - usage.used);
+    s += ` На сегодня у него осталось примерно ${left} токенов дневного лимита из ${usage.limit}.`;
+    if (left <= usage.limit * 0.15) s += ' Лимит почти исчерпан — можешь ненавязчиво предупредить, если уместно.';
+  }
+  return s;
+}
+
+// Оценка входных токенов (если провайдер не вернул точный usage).
+function estimateInputTokens(contents) {
+  let n = 0;
+  for (const m of contents) {
+    n += estimateTokens(m.text);
+    for (const a of (m.media || [])) {
+      if (/^image\//i.test(a.mimeType || '')) n += 800;
+      else n += Math.ceil(((a.data || '').length * 0.75) / 3.5);
+    }
+  }
+  return n;
 }
 
 const RECALL_MARK = '!recall_media';
@@ -153,7 +196,7 @@ function extractFullText(provider, raw) {
 
 export default async function handler(req) {
   const startedAt = Date.now();
-  const deadline = startedAt + BUDGET_MS;
+  const openDeadline = startedAt + OPEN_BUDGET_MS;
 
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -162,9 +205,9 @@ export default async function handler(req) {
 
   const user = await readSession(req);
   const guest = !user;
-  let { messages, model, temperature: rawTemp, customPrompt, skillsPrompt, recall, hasOldMedia } = body || {};
+  let { messages, model, temperature: rawTemp, customPrompt, skillsPrompt, recall, hasOldMedia, isContinue } = body || {};
   if (guest) {
-    model = GUEST_MODEL; customPrompt = ''; skillsPrompt = ''; rawTemp = 0.9; recall = false; hasOldMedia = false;
+    model = GUEST_MODEL; customPrompt = ''; skillsPrompt = ''; rawTemp = 0.9; recall = false; hasOldMedia = false; isContinue = false;
     if (Array.isArray(messages)) {
       messages = messages.slice(-GUEST_MAX_MESSAGES).map((m) => ({ ...m, attachments: [] }));
     }
@@ -182,7 +225,7 @@ export default async function handler(req) {
     return sseError(`${selectedInfo.label} не поддерживает изображения и файлы. Выбери модель со зрением или убери вложения.`);
   }
 
-  // ---- Бесплатный лимит (Usage) ----
+  // ---- Дневной лимит (в токенах) ----
   // Гость опознаётся по подписанной cookie; залогиненный — по сессии.
   let usageHeaders = {};
   let usageCtx;
@@ -193,25 +236,36 @@ export default async function handler(req) {
   } else {
     usageCtx = { kind: 'user', id: user.id };
   }
-  const points = (selectedInfo && selectedInfo.points) || 1;
+  const mult = (selectedInfo && selectedInfo.mult) || 1;
   const usage = await readUsage(process.env, usageCtx);
-  if (!hasRoom(usage, points)) {
+  const estInTokens = estimateInputTokens(contents);
+  const minCost = Math.max(1, Math.round(estInTokens * mult));
+  if (!hasRoom(usage, minCost)) {
     const msg = guest
-      ? 'Дневной лимит гостя исчерпан (10 сообщений). Войди в аккаунт, чтобы продолжить.'
-      : 'Дневной бесплатный лимит исчерпан. Пополни баланс или подожди до сброса.';
+      ? 'Дневной лимит гостя исчерпан. Войди в аккаунт, чтобы продолжить.'
+      : 'Дневной лимит исчерпан. Пополни баланс или подожди до сброса.';
     return sseError(msg, usageHeaders);
   }
 
   const lastUser = Array.isArray(messages) ? [...messages].reverse().find((m) => m && m.role === 'user') : null;
   const newMedia = !!(lastUser && Array.isArray(lastUser.attachments) && lastUser.attachments.some((a) => a && a.data));
   const note = recallNote({ newMedia, recallPass: !!recall, hasOldMedia: !!hasOldMedia });
-  let systemText = SYSTEM_PROMPT.replace('{{DATETIME}}', mskDatetime()).replace('{{RECALL_NOTE}}', note);
+  const userContext = buildUserContext({ user, guest, usage });
+  let systemText = SYSTEM_PROMPT
+    .replace('{{DATETIME}}', mskDatetime())
+    .replace('{{MODEL}}', selectedInfo ? selectedInfo.label : selectedModel)
+    .replace('{{PROVIDER}}', PROVIDER_LABELS[selectedInfo && selectedInfo.provider] || '')
+    .replace('{{USER_CONTEXT}}', userContext)
+    .replace('{{RECALL_NOTE}}', note);
   if (typeof customPrompt === 'string' && customPrompt.trim()) {
     systemText += '\n\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ ПОЛЬЗОВАТЕЛЯ (стиль и предпочтения; не отменяют правила выше):\n' + customPrompt.trim().slice(0, 1500);
   }
-  // Скиллы — включённые пользователем роли/инструкции (встроенные или свои).
+  // Скиллы, вызванные через @ в сообщении (встроенные или свои).
   if (typeof skillsPrompt === 'string' && skillsPrompt.trim()) {
     systemText += '\n\nАКТИВНЫЕ СКИЛЛЫ (следуй им в этом диалоге; они не отменяют правила выше):\n' + skillsPrompt.trim().slice(0, 6000);
+  }
+  if (isContinue) {
+    systemText += '\n\nПРОДОЛЖЕНИЕ. Предыдущий ответ оборвался на середине. Продолжи его ровно с того места, где он остановился: без вступлений, без повторов уже сказанного и без извинений. Просто продолжай текст или код.';
   }
 
   const modelsToTry = [selectedModel];
@@ -253,6 +307,7 @@ export default async function handler(req) {
 
   let lastErr = null;
   let activeProvider = null;
+  let streamCtrl = null;
   const tried = [];
 
   outer:
@@ -271,7 +326,7 @@ export default async function handler(req) {
     for (let ki = 0; ki < order.length; ki++) {
       if (clientGone) break outer;
 
-      const remain = deadline - Date.now();
+      const remain = openDeadline - Date.now();
       if (remain <= PER_KEY_OPEN_TIMEOUT_MS) {
         tried.push({ model: mdl, provider: info.provider, key: `#${ki + 1}`, result: 'skipped:time-budget' });
         break outer;
@@ -286,12 +341,12 @@ export default async function handler(req) {
           signal: ctrl.signal, env: process.env,
         });
         clearTimeout(timer);
-        upstreamCtrls.delete(ctrl);
         if (res.ok && res.body) {
-          upstream = res; activeProvider = provider;
+          upstream = res; activeProvider = provider; streamCtrl = ctrl;
           tried.push({ model: mdl, provider: info.provider, key: `#${ki + 1}`, result: 'ok' });
           break outer;
         }
+        upstreamCtrls.delete(ctrl);
         const detail = await res.text().catch(() => '');
         const retry = res.status === 429 || res.status >= 500 || res.status === 403;
         lastErr = { retry, status: res.status, detail };
@@ -337,6 +392,7 @@ export default async function handler(req) {
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
+  const streamDeadline = Date.now() + STREAM_BUDGET_MS;
   let total = 0;
   let blocked = null;
   const markFilter = makeMarkerFilter();
@@ -350,10 +406,23 @@ export default async function handler(req) {
       let buf = '';
       let rawAll = '';
       let timedOut = false;
+      let stalled = false;
+      let fatal = null;
+      let usageTokens = 0;
       const ctype = (upstream.headers.get('content-type') || '').toLowerCase();
       const isSSE = ctype.includes('text/event-stream');
       // Диагностика: если ответ окажется пустым, по этим данным видно, что реально пришло.
       const diag = { ctype, dataLines: 0, events: 0, reasoningChars: 0, head: '' };
+
+      let idleTimer = null;
+      const armIdle = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          stalled = true;
+          try { if (streamCtrl) streamCtrl.abort(); } catch {}
+          try { reader.cancel(); } catch {}
+        }, IDLE_MS);
+      };
 
       const feed = (payload) => {
         diag.dataLines++;
@@ -363,20 +432,23 @@ export default async function handler(req) {
         const ev = activeProvider.parseEvent(data);
         if (ev && ev.blocked) blocked = ev.blocked;
         if (ev && ev.reasoning) diag.reasoningChars += ev.reasoning.length;
+        if (ev && ev.usage) usageTokens = Math.max(usageTokens, ev.usage);
         const raw = (ev && ev.text) || '';
         const text = raw ? markFilter.push(raw) : '';
         if (text) { total += text.length; send({ delta: text }); }
       };
 
       try {
+        armIdle();
         while (true) {
           if (clientGone || (clientSignal && clientSignal.aborted)) return;
 
-          const remain = deadline - Date.now();
+          const remain = streamDeadline - Date.now();
           if (remain <= 0) { timedOut = true; break; }
 
           const { value, done } = await reader.read();
           if (done) break;
+          armIdle();
 
           const decoded = dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
           if (rawAll.length < 262144) rawAll += decoded;
@@ -396,59 +468,82 @@ export default async function handler(req) {
             }
           }
         }
-        buf += dec.decode();
-        diag.head = rawAll.slice(0, 400);
-
-        if (clientGone || (clientSignal && clientSignal.aborted)) return;
-
-        if (isSSE) {
-          // Хвост: последнее событие могло прийти без пустой строки-разделителя.
-          for (const line of buf.split('\n')) {
-            if (!line.startsWith('data:')) continue;
-            const payload = line.slice(5).trim();
-            if (!payload || payload === '[DONE]') continue;
-            feed(payload);
-          }
-        }
-        // Не-стриминговый ответ: сервис вернул один JSON вместо потока событий.
-        if (!isSSE || (diag.events === 0 && rawAll.trim())) {
-          const full = extractFullText(activeProvider, rawAll);
-          if (full.blocked) blocked = full.blocked;
-          if (full.text) {
-            const t = markFilter.push(full.text);
-            if (t) { total += t.length; send({ delta: t }); }
-          }
-        }
-
-        const rest = markFilter.flush();
-        if (rest) { total += rest.length; send({ delta: rest }); }
-        if (markFilter.found) send({ recall: true });
-
-        if (timedOut && total === 0) {
-          console.error('[chat] time-budget', { tried, diag, elapsedMs: Date.now() - startedAt });
-          send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
-        } else if (total === 0 && markFilter.found && !blocked) {
-          // Модель попросила старые медиа и больше ничего не сказала: клиент сам повторит запрос.
-        } else if (total === 0 && !blocked) {
-          console.error('[chat] empty-response', { tried, diag, elapsedMs: Date.now() - startedAt });
-          send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
-        } else if (total === 0 && blocked) {
-          send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
-        } else {
-          // Успешный ответ — только теперь списываем очки лимита.
-          // При пустом ответе/ошибке сервиса лимит не трогаем.
-          const newUsed = await charge(process.env, { ...usageCtx, points }).catch(() => null);
-          send({ done: true, usage: { points, used: newUsed, limit: usage.limit } });
-        }
-        if (total === 0) send({ done: true });
       } catch (err) {
-        if (!(err && err.name === 'AbortError') && !clientGone) {
-          console.error('[chat] stream read error', err);
-          send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
+        if (clientGone || (clientSignal && clientSignal.aborted)) return;
+        if (err && err.name === 'AbortError') {
+          // Либо idle-таймаут, либо стрим-бюджет — оба означают «продолжим позже».
+          if (!stalled) timedOut = true;
+        } else {
+          fatal = err;
         }
       } finally {
-        try { controller.close(); } catch {}
+        clearTimeout(idleTimer);
       }
+
+      buf += dec.decode();
+      diag.head = rawAll.slice(0, 400);
+
+      if (clientGone || (clientSignal && clientSignal.aborted)) return;
+
+      if (isSSE) {
+        // Хвост: последнее событие могло прийти без пустой строки-разделителя.
+        for (const line of buf.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          feed(payload);
+        }
+      }
+      // Не-стриминговый ответ: сервис вернул один JSON вместо потока событий.
+      if (!isSSE || (diag.events === 0 && rawAll.trim())) {
+        const full = extractFullText(activeProvider, rawAll);
+        if (full.blocked) blocked = full.blocked;
+        if (full.text) {
+          const t = markFilter.push(full.text);
+          if (t) { total += t.length; send({ delta: t }); }
+        }
+      }
+
+      const rest = markFilter.flush();
+      if (rest) { total += rest.length; send({ delta: rest }); }
+      if (markFilter.found) send({ recall: true });
+
+      const truncated = timedOut || stalled || !!fatal;
+
+      if (total === 0 && markFilter.found && !blocked) {
+        // Модель попросила старые медиа и больше ничего не сказала: клиент сам повторит запрос.
+      } else if (total === 0 && blocked) {
+        send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
+      } else if (total === 0) {
+        if (timedOut || stalled) {
+          console.error('[chat] time-budget', { tried, diag, elapsedMs: Date.now() - startedAt });
+          send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
+        } else if (fatal) {
+          console.error('[chat] stream read error', fatal);
+          send({ error: 'Соединение прервалось. Попробуй ещё раз.' });
+        } else {
+          console.error('[chat] empty-response', { tried, diag, elapsedMs: Date.now() - startedAt });
+          send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
+        }
+      } else {
+        // Успешный ответ — только теперь списываем токены лимита.
+        // При пустом ответе/ошибке сервиса лимит не трогаем.
+        const estOut = Math.ceil(total / 3.5);
+        const usedTokens = usageTokens || (estInTokens + estOut);
+        const cost = Math.max(1, Math.round(usedTokens * mult));
+        // При обрыве соединения на стороне сервиса не списываем.
+        const newUsed = fatal
+          ? usage.used
+          : await charge(process.env, { ...usageCtx, cost }).catch(() => null);
+        send({
+          done: true,
+          truncated: truncated || undefined,
+          usage: { used: newUsed, limit: usage.limit, unit: 'tokens', cost },
+        });
+      }
+      if (total === 0) send({ done: true });
+
+      try { controller.close(); } catch {}
     },
     cancel() {
       abortUpstream();
