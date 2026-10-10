@@ -1546,6 +1546,22 @@ h1, h2, h3, .empty-title, .dialog-header h2, .about-block h3 { font-variation-se
 .skills-form-row .skills-id-input { max-width: 220px; }
 .skills-id-hint { font-size: .74rem; color: var(--md-on-surface-variant); line-height: 1.45; margin: -2px 2px 0; }
 
+/* ===== API KEYS DIALOG ===== */
+.api-dialog { width: min(600px, 94vw); }
+.api-base {
+  display: flex; align-items: center; gap: 8px; margin: 10px 0 4px;
+  padding: 8px 8px 8px 12px; border-radius: var(--r-md);
+  background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant);
+}
+.api-base-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--md-on-surface-variant); flex-shrink: 0; }
+.api-base code { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.api-secret { margin-top: 14px; padding: 12px; border-radius: var(--r-md); background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); }
+.api-secret-warn { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--md-amber); margin-bottom: 10px; }
+.api-secret-warn .material-symbols-rounded { font-size: 18px; }
+.api-secret-row { display: flex; align-items: center; gap: 8px; }
+.api-secret-key { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: .8rem; word-break: break-all; }
+.api-secret-row .btn { flex-shrink: 0; }
+
 /* ===== МЕНЮ @-УПОМИНАНИЙ ===== */
 .mention-menu {
   position: absolute; left: 12px; right: 12px; bottom: calc(100% - 4px); z-index: 25;

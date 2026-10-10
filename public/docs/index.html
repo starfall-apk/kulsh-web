@@ -81,8 +81,8 @@
     </div>
 
     <div class="callout docs-callout">
-      <span class="material-symbols-rounded">construction</span>
-      <p data-i18n="docs.wip">Публичный API с персональными ключами ещё готовится. Страница описывает будущий контракт — эндпоинты и форматы уже зафиксированы, чтобы ты мог проектировать интеграцию заранее.</p>
+      <span class="material-symbols-rounded">key</span>
+      <p data-i18n="docs.wip">API работает. Ключ создаётся в аккаунте — открой меню аккаунта (аватар в правом верхнем углу) → API. Один ключ подходит и для API, и для веб-чата.</p>
     </div>
 
     <div class="docs">
@@ -99,7 +99,7 @@
         <h2 id="overview" data-i18n="docs.nav.overview">Обзор</h2>
         <p data-i18n="docs.overview.p">API принимает сообщения и возвращает ответ модели потоком (Server-Sent Events). Формат совместим с распространённой схемой чат-комплишенов, поэтому подключается обычным HTTP-клиентом.</p>
         <ul>
-          <li data-i18n-html="docs.overview.l1">Базовый адрес: <code>https://ТВОЙ-ДОМЕН/api/v1</code></li>
+          <li data-i18n-html="docs.overview.l1">Базовый адрес: <code>https://kulsh.vercel.app/api/v1</code></li>
           <li data-i18n-html="docs.overview.l2">Формат: JSON, ответ — поток событий <code>text/event-stream</code></li>
           <li data-i18n-html="docs.overview.l3">Аутентификация: заголовок <code>Authorization: Bearer &lt;API_KEY&gt;</code></li>
         </ul>
@@ -161,8 +161,9 @@ Authorization: Bearer <span class="c-str">kulsh_sk_...</span></pre></div>
         <ul>
           <li data-i18n-html="docs.errors.l1"><code>401</code> — ключ отсутствует или недействителен</li>
           <li data-i18n-html="docs.errors.l2"><code>402</code> — исчерпан бесплатный лимит и нулевой баланс</li>
-          <li data-i18n-html="docs.errors.l3"><code>429</code> — слишком много запросов, попробуй позже</li>
+          <li data-i18n-html="docs.errors.l3"><code>400</code> — некорректный запрос (нет сообщений, вложение не поддерживается)</li>
           <li data-i18n-html="docs.errors.l4"><code>502</code> — модель временно недоступна (токены не списываются)</li>
+          <li data-i18n-html="docs.errors.l5"><code>503</code> — на сервере не заданы ключи провайдеров</li>
         </ul>
       </div>
     </div>

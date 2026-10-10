@@ -459,6 +459,46 @@
   <div class="dialog-body preview-body" id="previewBody"></div>
 </div>
 
+<!-- ============ API KEYS DIALOG ============ -->
+<div class="dialog-backdrop" id="apiBackdrop"></div>
+<div class="dialog api-dialog" id="apiDialog" role="dialog" aria-modal="true" aria-labelledby="apiTitle">
+  <div class="dialog-header">
+    <h2 id="apiTitle" data-i18n="api.title">API</h2>
+    <button class="icon-btn" id="apiCloseBtn" type="button" aria-label="Закрыть">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+  <div class="dialog-body">
+    <p class="settings-note" data-i18n="api.intro"></p>
+    <div class="api-base">
+      <span class="api-base-label" data-i18n="api.baseLabel">Base URL</span>
+      <code id="apiBase">https://kulsh.vercel.app/api/v1</code>
+      <button class="icon-btn" id="apiBaseCopy" type="button" data-i18n-aria="chat.copy" aria-label="Копировать">
+        <span class="material-symbols-rounded">content_copy</span>
+      </button>
+    </div>
+    <h3 class="skills-group" data-i18n="api.keys"></h3>
+    <div class="skills-list" id="apiList"></div>
+    <div class="skills-actions">
+      <button class="btn btn-tonal" id="apiCreateBtn" type="button">
+        <span class="material-symbols-rounded">add</span><span data-i18n="api.create"></span>
+      </button>
+      <a class="btn btn-tonal" href="/docs" target="_blank" rel="noopener noreferrer">
+        <span class="material-symbols-rounded">menu_book</span><span data-i18n="api.docs"></span>
+      </a>
+    </div>
+    <div class="skills-form" id="apiForm" hidden>
+      <input class="text-input" id="apiName" maxlength="40" data-i18n-placeholder="api.namePh" />
+      <div class="skills-form-actions">
+        <button class="btn" id="apiCancelBtn" type="button" data-i18n="skills.cancel"></button>
+        <button class="btn btn-filled" id="apiCreateSubmit" type="button" data-i18n="api.create"></button>
+      </div>
+    </div>
+    <div class="api-secret" id="apiSecret" hidden></div>
+    <p class="skills-error" id="apiError" hidden></p>
+  </div>
+</div>
+
 <script src="/lottie.min.js"></script>
 <script src="/marked.min.js"></script>
 <script src="/vendor/katex/katex.min.js"></script>

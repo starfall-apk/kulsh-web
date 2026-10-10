@@ -201,6 +201,20 @@
     mentionMenu: $('#mentionMenu'),
     previewDialog: $('#previewDialog'),
     previewBackdrop: $('#previewBackdrop'),
+
+    apiDialog: $('#apiDialog'),
+    apiBackdrop: $('#apiBackdrop'),
+    apiCloseBtn: $('#apiCloseBtn'),
+    apiList: $('#apiList'),
+    apiBase: $('#apiBase'),
+    apiBaseCopy: $('#apiBaseCopy'),
+    apiCreateBtn: $('#apiCreateBtn'),
+    apiForm: $('#apiForm'),
+    apiName: $('#apiName'),
+    apiCancelBtn: $('#apiCancelBtn'),
+    apiCreateSubmit: $('#apiCreateSubmit'),
+    apiSecret: $('#apiSecret'),
+    apiError: $('#apiError'),
   };
 
   // ============================================================
@@ -894,6 +908,96 @@
     });
   }
 
+  // ============================================================
+  // API-КЛЮЧИ (публичный API /api/v1)
+  // ============================================================
+  let apiKeys = [];
+
+  const apiBaseUrl = () => (location.origin || 'https://kulsh.vercel.app') + '/api/v1';
+
+  async function loadApiKeys() {
+    try {
+      const j = await fetch('/api/keys', { cache: 'no-store' }).then((r) => r.json());
+      apiKeys = Array.isArray(j.keys) ? j.keys : [];
+    } catch { apiKeys = []; }
+    return apiKeys;
+  }
+
+  function renderApiKeys() {
+    if (!el.apiList) return;
+    if (el.apiBase) el.apiBase.textContent = apiBaseUrl();
+    if (!apiKeys.length) {
+      el.apiList.innerHTML = `<p class="skills-empty">${escapeHtml(window.t('api.empty'))}</p>`;
+      return;
+    }
+    el.apiList.innerHTML = apiKeys.map((k) => `
+      <div class="skills-item" data-key="${escapeAttr(k.id)}">
+        <span class="skills-ico"><span class="material-symbols-rounded">key</span></span>
+        <span class="skills-txt">
+          <span class="skills-name">${escapeHtml(k.name)}</span>
+          <span class="skills-desc"><code>${escapeHtml(k.prefix)}</code></span>
+        </span>
+        <button class="skills-del" type="button" data-revoke="${escapeAttr(k.id)}" aria-label="${escapeAttr(window.t('api.revoke'))}"><span class="material-symbols-rounded">delete</span></button>
+      </div>`).join('');
+  }
+
+  async function openApi() {
+    if (!el.apiDialog) return;
+    el.apiBackdrop.classList.add('is-open');
+    el.apiDialog.classList.add('is-open');
+    el.apiForm.hidden = true;
+    el.apiSecret.hidden = true;
+    el.apiError.hidden = true;
+    await loadApiKeys();
+    renderApiKeys();
+  }
+  function closeApi() {
+    if (!el.apiDialog) return;
+    el.apiBackdrop.classList.remove('is-open');
+    el.apiDialog.classList.remove('is-open');
+    el.apiForm.hidden = true;
+    el.apiSecret.hidden = true;
+    el.apiError.hidden = true;
+  }
+  function showApiError(msg) { if (el.apiError) { el.apiError.textContent = msg; el.apiError.hidden = false; } }
+
+  function showApiSecret(secret) {
+    if (!el.apiSecret) return;
+    el.apiSecret.hidden = false;
+    el.apiSecret.innerHTML = `<div class="api-secret-warn"><span class="material-symbols-rounded">warning</span><span>${escapeHtml(window.t('api.secretWarn'))}</span></div>
+      <div class="api-secret-row"><code class="api-secret-key">${escapeHtml(secret)}</code>
+      <button class="btn btn-tonal btn-sm" id="apiSecretCopy" type="button"><span class="material-symbols-rounded">content_copy</span><span>${escapeHtml(window.t('chat.copy'))}</span></button></div>`;
+    el.apiSecret.querySelector('#apiSecretCopy').addEventListener('click', (e) => flashCopied(e.currentTarget, secret));
+  }
+
+  async function createApiKey() {
+    const name = (el.apiName.value || '').trim();
+    el.apiCreateSubmit.disabled = true;
+    try {
+      const r = await fetch('/api/keys', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j.secret) throw new Error((j && j.error) || 'fail');
+      apiKeys = [j.key, ...apiKeys];
+      el.apiName.value = '';
+      el.apiForm.hidden = true;
+      el.apiError.hidden = true;
+      renderApiKeys();
+      showApiSecret(j.secret);
+    } catch {
+      showApiError(window.t('api.error'));
+    } finally {
+      el.apiCreateSubmit.disabled = false;
+    }
+  }
+
+  async function revokeApiKey(id) {
+    try { await fetch('/api/keys?id=' + encodeURIComponent(id), { method: 'DELETE' }); } catch {}
+    apiKeys = apiKeys.filter((k) => k.id !== id);
+    renderApiKeys();
+  }
+
   // ---------- Markdown ----------
   function renderMarkdown(text, opts) {
     opts = opts || {};
@@ -1232,11 +1336,13 @@
       copyBtn.addEventListener('click', () => flashCopied(copyBtn, cleanRecall(m.text || '')));
       actions.appendChild(copyBtn);
 
-      const editBtn = document.createElement('button');
-      editBtn.innerHTML = '<span class="material-symbols-rounded">edit</span>';
-      editBtn.title = window.t('chat.edit');
-      editBtn.addEventListener('click', () => startEditMessage(wrap, m));
-      actions.appendChild(editBtn);
+      if (m.role === 'user') {
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '<span class="material-symbols-rounded">edit</span>';
+        editBtn.title = window.t('chat.edit');
+        editBtn.addEventListener('click', () => startEditMessage(wrap, m));
+        actions.appendChild(editBtn);
+      }
 
       if (m.role === 'assistant') {
         const speakBtn = document.createElement('button');
@@ -1652,13 +1758,14 @@
     requestAssistantReply(chat, { isContinue: true });
   }
 
-  // Троттлинг отрисовки во время стрима — иначе длинные ответы (и код в них)
-  // перерисовывают markdown на каждый чанк и интерфейс начинает лагать.
+  // Отрисовка во время стрима — не чаще одного кадра. Это сохраняет видимый
+  // поток (текст появляется постепенно), но не пересобирает markdown на каждый
+  // чанк, поэтому длинные ответы с кодом больше не подлагивают.
   let streamRenderQueued = false;
   function scheduleStreamRender() {
     if (streamRenderQueued) return;
     streamRenderQueued = true;
-    setTimeout(() => { streamRenderQueued = false; renderMessages(); }, 45);
+    requestAnimationFrame(() => { streamRenderQueued = false; renderMessages(); });
   }
 
   // ============================================================
@@ -2065,6 +2172,7 @@
     // Действия из объединённого меню аккаунта (auth.js).
     window.addEventListener('kulsh-open-settings', () => { populateModelSelect(); openSettings(); });
     window.addEventListener('kulsh-open-skills', () => { openSkills(); });
+    window.addEventListener('kulsh-open-api', () => { openApi(); });
     // Смена языка из меню: auth.js пишет настройку в localStorage напрямую,
     // поэтому перечитываем её и заново применяем к интерфейсу.
     window.addEventListener('kulsh-lang-change', () => {
@@ -2193,9 +2301,24 @@
       el.skillsForm.hidden = true; el.skillsError.hidden = true;
     });
     if (el.skillSaveBtn) el.skillSaveBtn.addEventListener('click', saveSkill);
+
+    // API-ключи
+    if (el.apiCloseBtn) el.apiCloseBtn.addEventListener('click', closeApi);
+    if (el.apiBackdrop) el.apiBackdrop.addEventListener('click', closeApi);
+    if (el.apiBaseCopy) el.apiBaseCopy.addEventListener('click', (e) => flashCopied(e.currentTarget, apiBaseUrl()));
+    if (el.apiCreateBtn) el.apiCreateBtn.addEventListener('click', () => {
+      el.apiForm.hidden = false; el.apiError.hidden = true; el.apiName.focus();
+    });
+    if (el.apiCancelBtn) el.apiCancelBtn.addEventListener('click', () => { el.apiForm.hidden = true; el.apiError.hidden = true; });
+    if (el.apiCreateSubmit) el.apiCreateSubmit.addEventListener('click', createApiKey);
+    if (el.apiList) el.apiList.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-revoke]');
+      if (b) revokeApiKey(b.dataset.revoke);
+    });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
-      if (el.skillsDialog && el.skillsDialog.classList.contains('is-open')) closeSkills();
+      if (el.apiDialog && el.apiDialog.classList.contains('is-open')) closeApi();
+      else if (el.skillsDialog && el.skillsDialog.classList.contains('is-open')) closeSkills();
       else if (el.previewDialog && el.previewDialog.classList.contains('is-open')) Preview.close();
     });
 
@@ -2384,6 +2507,7 @@
     const hash = (location.hash || '').replace('#', '');
     if (hash === 'settings') { populateModelSelect(); openSettings(); }
     else if (hash === 'skills') { openSkills(); }
+    else if (hash === 'api') { openApi(); }
     if (hash) { try { history.replaceState(null, '', location.pathname); } catch {} }
 
     // Снимаем скелетон после того, как интерфейс полностью отрисован.

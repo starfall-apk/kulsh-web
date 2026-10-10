@@ -15,7 +15,7 @@
       cTitle: 'Добро пожаловать!', cSub: 'Прежде чем начать, ознакомься с тем, как работает Кульш и как мы обращаемся с данными.', cPolicy: 'Политика конфиденциальности',
       cItems: ['Чаты и настройки сохраняются в твоём аккаунте и доступны на всех устройствах', 'Сообщения отправляются нейросети Gemini для ответа', 'При входе мы получаем только имя и аватар — без почты и паролей', 'Выйти и очистить данные можно в любой момент'],
       cText: 'Нажимая «Принять», ты соглашаешься с', cAccept: 'Принять', cLater: 'Не сейчас', lockedModel: 'Нужен вход', lockedFeature: 'Эта функция доступна после входа.',
-      menuSettings: 'Настройки', menuLang: 'Язык', menuSkills: 'Скиллы', menuSupport: 'Поддержать',
+      menuSettings: 'Настройки', menuLang: 'Язык', menuSkills: 'Скиллы', menuSupport: 'Поддержать', menuApi: 'API',
       menuDetails: 'Подробнее', menuAbout: 'О Kulsh', menuPrivacy: 'Политика конфиденциальности', menuPrivacySettings: 'Настройки конфиденциальности',
       usageTitle: 'Дневной лимит', usageResets: 'Сброс', balance: 'Баланс', balanceSoon: 'Пополнение скоро',
       usageGuest: 'Гостевой лимит', usageLogin: 'Войти, чтобы больше', skillsSoon: 'Каталог скиллов появится здесь совсем скоро.',
@@ -31,7 +31,7 @@
       cTitle: 'Welcome!', cSub: 'Before you start, here is how Kulsh works and how we handle your data.', cPolicy: 'Privacy Policy',
       cItems: ['Chats and settings are saved to your account and available on all your devices', 'Messages are sent to Gemini to generate replies', 'Signing in gives us only your name and avatar — no email or passwords', 'You can sign out and clear your data at any time'],
       cText: 'By tapping “Accept” you agree to the', cAccept: 'Accept', cLater: 'Not now', lockedModel: 'Sign-in required', lockedFeature: 'This feature is available after signing in.',
-      menuSettings: 'Settings', menuLang: 'Language', menuSkills: 'Skills', menuSupport: 'Support',
+      menuSettings: 'Settings', menuLang: 'Language', menuSkills: 'Skills', menuSupport: 'Support', menuApi: 'API',
       menuDetails: 'More', menuAbout: 'About Kulsh', menuPrivacy: 'Privacy Policy', menuPrivacySettings: 'Privacy settings',
       usageTitle: 'Daily limit', usageResets: 'Resets', balance: 'Balance', balanceSoon: 'Top-up coming soon',
       usageGuest: 'Guest limit', usageLogin: 'Sign in for more', skillsSoon: 'The skills catalog will land here very soon.',
@@ -209,6 +209,9 @@
         <button class="acct-item" type="button" data-act="skills">
           <span class="material-symbols-rounded">extension</span><span>${s.menuSkills}</span>
         </button>
+        <button class="acct-item" type="button" data-act="api">
+          <span class="material-symbols-rounded">key</span><span>${s.menuApi}</span>
+        </button>
         <a class="acct-item" href="/donate" target="_blank" rel="noopener noreferrer">
           <span class="material-symbols-rounded">favorite</span><span>${s.menuSupport}</span>
         </a>
@@ -281,6 +284,10 @@
       closeMenu();
       if (document.getElementById('settingsDialog')) window.dispatchEvent(new CustomEvent('kulsh-open-skills'));
       else location.href = '/chat/#skills';
+    } else if (act === 'api') {
+      closeMenu();
+      if (document.getElementById('settingsDialog')) window.dispatchEvent(new CustomEvent('kulsh-open-api'));
+      else location.href = '/chat/#api';
     } else if (act === 'details') {
       const sub = menu.querySelector('.acct-sub');
       const open = sub.hidden;
