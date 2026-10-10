@@ -70,6 +70,14 @@ const google = {
     }
     return { text, finish: cand && cand.finishReason, blocked };
   },
+  // Разбор НЕ-стримингового ответа (если сервис проигнорировал stream:true).
+  parseFull(data) {
+    const br = data && data.promptFeedback && data.promptFeedback.blockReason;
+    const cand = data && data.candidates && data.candidates[0];
+    const parts = (cand && cand.content && cand.content.parts) || [];
+    const text = parts.map((p) => p.text || '').join('');
+    return { text, blocked: br || null };
+  },
 };
 
 // ---- NeutralBeats (OpenAI-совместимый API) ----
@@ -117,11 +125,26 @@ const openaiCompat = {
     const ch = data && data.choices && data.choices[0];
     const d = ch && ch.delta;
     let text = '';
+    let reasoning = '';
     if (d) {
       if (typeof d.content === 'string') text = d.content;
       else if (Array.isArray(d.content)) text = d.content.map((p) => (p && p.text) || '').join('');
+      // Reasoning-модели (DeepSeek и др.) сначала шлют размышления в отдельном поле.
+      if (typeof d.reasoning_content === 'string') reasoning = d.reasoning_content;
+      else if (typeof d.reasoning === 'string') reasoning = d.reasoning;
     }
-    return { text, finish: ch && ch.finish_reason, blocked: null };
+    return { text, reasoning, finish: ch && ch.finish_reason, blocked: null };
+  },
+  // Разбор НЕ-стримингового ответа (если сервис проигнорировал stream:true).
+  parseFull(data) {
+    const ch = data && data.choices && data.choices[0];
+    const msg = ch && (ch.message || ch.delta);
+    let text = '';
+    if (msg) {
+      if (typeof msg.content === 'string') text = msg.content;
+      else if (Array.isArray(msg.content)) text = msg.content.map((p) => (p && p.text) || '').join('');
+    }
+    return { text, blocked: null };
   },
 };
 

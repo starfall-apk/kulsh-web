@@ -1,9 +1,12 @@
 // api/chat.js — Vercel Edge Function.
-// Стриминг ответа Gemini (SSE -> клиенту), ротация ключей APIKEY1..APIKEY5
+// Стриминг ответа от LLM-провайдеров (Gemini / NeutralBeats) в SSE для клиента,
+// ротация ключей (Gemini: APIKEY1..APIKEY5, NeutralBeats: NEUTRALBEATS_API_KEY)
 // при 429/5xx/сетевых сбоях, защита от пустых ответов.
 //
 // ВАЖНО: Gemini отдаёт SSE с CRLF-разделителями (\r\n\r\n), а не LF (\n\n).
 // Поэтому после декодирования нормализуем \r\n -> \n, иначе события не режутся.
+// Провайдер может проигнорировать stream:true и вернуть один JSON — такой ответ
+// тоже разбираем (см. extractFullText).
 //
 // Кнопка «стоп» на фронте вызывает AbortController.abort() → fetch отменяется →
 // req.signal.aborted = true на сервере → мы отменяем upstream-запрос к Gemini
@@ -134,6 +137,18 @@ function sseError(message, extraHeaders = {}) {
       ...extraHeaders,
     },
   });
+}
+
+// Провайдер мог проигнорировать stream:true и отдать один JSON-объект.
+// Достаём текст из полного ответа (choices[0].message.content / candidates[0]).
+function extractFullText(provider, raw) {
+  try {
+    const data = JSON.parse(raw);
+    const ev = provider.parseFull ? provider.parseFull(data) : null;
+    return { text: (ev && ev.text) || '', blocked: (ev && ev.blocked) || null };
+  } catch {
+    return { text: '', blocked: null };
+  }
 }
 
 export default async function handler(req) {
@@ -333,53 +348,89 @@ export default async function handler(req) {
       };
       const reader = upstream.body.getReader();
       let buf = '';
+      let rawAll = '';
+      let timedOut = false;
+      const ctype = (upstream.headers.get('content-type') || '').toLowerCase();
+      const isSSE = ctype.includes('text/event-stream');
+      // Диагностика: если ответ окажется пустым, по этим данным видно, что реально пришло.
+      const diag = { ctype, dataLines: 0, events: 0, reasoningChars: 0, head: '' };
+
+      const feed = (payload) => {
+        diag.dataLines++;
+        let data;
+        try { data = JSON.parse(payload); } catch { return; }
+        diag.events++;
+        const ev = activeProvider.parseEvent(data);
+        if (ev && ev.blocked) blocked = ev.blocked;
+        if (ev && ev.reasoning) diag.reasoningChars += ev.reasoning.length;
+        const raw = (ev && ev.text) || '';
+        const text = raw ? markFilter.push(raw) : '';
+        if (text) { total += text.length; send({ delta: text }); }
+      };
+
       try {
         while (true) {
-          if (clientGone || (clientSignal && clientSignal.aborted)) break;
+          if (clientGone || (clientSignal && clientSignal.aborted)) return;
 
           const remain = deadline - Date.now();
-          if (remain <= 0) {
-            send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
-            break;
-          }
+          if (remain <= 0) { timedOut = true; break; }
 
           const { value, done } = await reader.read();
           if (done) break;
 
           const decoded = dec.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+          if (rawAll.length < 262144) rawAll += decoded;
           buf += decoded;
 
-          let idx;
-          while ((idx = buf.indexOf('\n\n')) !== -1) {
-            const chunk = buf.slice(0, idx);
-            buf = buf.slice(idx + 2);
-            for (const line of chunk.split('\n')) {
-              if (!line.startsWith('data:')) continue;
-              const payload = line.slice(5).trim();
-              if (!payload || payload === '[DONE]') continue;
-              let data;
-              try { data = JSON.parse(payload); } catch { continue; }
-              const ev = activeProvider.parseEvent(data);
-              if (ev && ev.blocked) blocked = ev.blocked;
-              const raw = (ev && ev.text) || '';
-              const text = raw ? markFilter.push(raw) : '';
-              if (text) { total += text.length; send({ delta: text }); }
+          if (isSSE) {
+            let idx;
+            while ((idx = buf.indexOf('\n\n')) !== -1) {
+              const chunk = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              for (const line of chunk.split('\n')) {
+                if (!line.startsWith('data:')) continue;
+                const payload = line.slice(5).trim();
+                if (!payload || payload === '[DONE]') continue;
+                feed(payload);
+              }
             }
           }
         }
+        buf += dec.decode();
+        diag.head = rawAll.slice(0, 400);
 
-        if (clientGone || (clientSignal && clientSignal.aborted)) {
-          return;
+        if (clientGone || (clientSignal && clientSignal.aborted)) return;
+
+        if (isSSE) {
+          // Хвост: последнее событие могло прийти без пустой строки-разделителя.
+          for (const line of buf.split('\n')) {
+            if (!line.startsWith('data:')) continue;
+            const payload = line.slice(5).trim();
+            if (!payload || payload === '[DONE]') continue;
+            feed(payload);
+          }
+        }
+        // Не-стриминговый ответ: сервис вернул один JSON вместо потока событий.
+        if (!isSSE || (diag.events === 0 && rawAll.trim())) {
+          const full = extractFullText(activeProvider, rawAll);
+          if (full.blocked) blocked = full.blocked;
+          if (full.text) {
+            const t = markFilter.push(full.text);
+            if (t) { total += t.length; send({ delta: t }); }
+          }
         }
 
         const rest = markFilter.flush();
         if (rest) { total += rest.length; send({ delta: rest }); }
         if (markFilter.found) send({ recall: true });
 
-        if (total === 0 && markFilter.found && !blocked) {
+        if (timedOut && total === 0) {
+          console.error('[chat] time-budget', { tried, diag, elapsedMs: Date.now() - startedAt });
+          send({ error: 'Ответ от модели слишком долгий. Попробуй ещё раз или укороти вопрос.' });
+        } else if (total === 0 && markFilter.found && !blocked) {
           // Модель попросила старые медиа и больше ничего не сказала: клиент сам повторит запрос.
         } else if (total === 0 && !blocked) {
-          console.error('[chat] empty-response', { tried, elapsedMs: Date.now() - startedAt });
+          console.error('[chat] empty-response', { tried, diag, elapsedMs: Date.now() - startedAt });
           send({ error: 'Модель вернула пустой ответ. Нажми «Повторить».' });
         } else if (total === 0 && blocked) {
           send({ error: `Ответ не сгенерирован (фильтр: ${blocked}). Попробуй переформулировать.` });
