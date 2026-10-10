@@ -1,0 +1,12 @@
+# Локальные секреты — не коммитить
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# Системные
+.DS_Store
+Thumbs.db
+node_modules/

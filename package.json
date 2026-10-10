@@ -2,7 +2,7 @@
   "name": "kulshgpt",
   "version": "2.0.0",
   "private": true,
-  "description": "KulshAI — Material Design 3 web chat interface for Google Gemini models, with multi-key rotation, voice, attachments and chat history.",
+  "description": "KulshAI — Material Design 3 web chat with multi-provider LLMs (Google Gemini, NeutralBeats), usage limits, skills, voice, attachments and chat history.",
   "scripts": {
     "dev": "vercel dev"
   },
